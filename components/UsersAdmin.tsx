@@ -1,29 +1,31 @@
 "use client";
 import {useState,type FormEvent} from 'react';
-type U={id:string;email:string;disabled:boolean;email_verified_at:string|null;admin_created:boolean};
+type U={id:string;username:string|null;email:string;disabled:boolean;email_verified_at:string|null;admin_created:boolean;created_at?:string;link_count?:number};
 type R={id:string;slug:string;reason:string;details:string;created_at:string};
 export default function UsersAdmin({users,reports}:{users:U[];reports:R[]}){
- const [list,setList]=useState(users),[email,setEmail]=useState(''),[password,setPassword]=useState('');
+ const [list,setList]=useState(users),[email,setEmail]=useState(''),[username,setUsername]=useState(''),[password,setPassword]=useState('');
  const [issued,setIssued]=useState<{email:string;password:string}|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  async function create(e:FormEvent){e.preventDefault();setBusy(true);setError('');setIssued(null);
- try{const r=await fetch('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,...(password?{password}:{})})});
- const d=await r.json();if(!r.ok)throw Error(d.error||'Failed to create account');setList(prev=>[d.user,...prev]);setIssued({email:d.user.email,password:d.temporaryPassword});setEmail('');setPassword('');}
+ try{const r=await fetch('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,username,...(password?{password}:{})})});
+ const d=await r.json();if(!r.ok)throw Error(d.error||'Failed to create account');setList(prev=>[d.user,...prev]);setIssued({email:`${d.user.username} (${d.user.email})`,password:d.temporaryPassword});setEmail('');setUsername('');setPassword('');}
  catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function reset(u:U){const chosen=prompt(`Enter a new password for ${u.email} (8–128 characters). Leave blank to generate a secure password.`);
  if(chosen===null)return;setError('');setIssued(null);setBusy(true);
  try{const r=await fetch(`/api/admin/users/${u.id}/password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:chosen})});const d=await r.json();if(!r.ok)throw Error(d.error||'Failed to reset');setIssued({email:u.email,password:d.password});}
  catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ async function sendRecovery(u:U){if(!confirm(`Send a secure ${u.email_verified_at?'password reset':'recovery email verification'} link to ${u.email}?`))return;
+ setError('');setBusy(true);try{const r=await fetch(`/api/admin/users/${u.id}/recovery`,{method:'POST',headers:{'Content-Type':'application/json'}});const d=await r.json();if(!r.ok)throw Error(d.error||'Email delivery failed');alert(d.message)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function suspended(u:U){if(!confirm(`${u.disabled?'Enable':'Suspend'} ${u.email}?`))return;
  const r=await fetch(`/api/admin/users/${u.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({disabled:!u.disabled})});
  if(r.ok)setList(old=>old.map(x=>x.id===u.id?{...x,disabled:!x.disabled}:x));else setError('Unable to update account');}
- return <main className="wrap"><p><a href="/admin">← Owner dashboard</a></p>
+ return <div className="admin-subpage">
  <section className="panel"><h1>Create test account</h1><p className="muted">Owner-created accounts can log in immediately, without Resend. This is <b>admin-approved testing access</b>, not proof of email ownership.</p>
- <form onSubmit={create}><label>Email address<input className="input" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e=>setEmail(e.target.value)}/></label>
+ <form onSubmit={create}><label>Username (optional; generated if empty)<input className="input" minLength={3} maxLength={30} pattern="[A-Za-z][A-Za-z0-9_]{2,29}" value={username} onChange={e=>setUsername(e.target.value)} placeholder="test_user"/></label><label>Email address<input className="input" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e=>setEmail(e.target.value)}/></label>
  <label>Password (optional; 8–128 characters)<input className="input" type="password" minLength={8} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" placeholder="Leave empty to generate a secure password"/></label>
  <button className="btn" disabled={busy}>{busy?'Working…':'Create test account'}</button></form>
  {error&&<p className="alert" role="alert">{error}</p>}
  {issued&&<div className="panel" role="status"><h2>New password — shown only now</h2><p>{issued.email}</p><p><code>{issued.password}</code></p><button className="btn gray" onClick={()=>navigator.clipboard.writeText(issued.password)}>Copy password</button>{' '}<button className="btn gray" onClick={()=>setIssued(null)}>Hide</button><p className="muted">Passwords are stored as bcrypt hashes. Existing passwords cannot be displayed; reset one if needed.</p></div>}
- </section><section className="panel"><h2>Accounts</h2><div style={{overflowX:'auto'}}><table className="table"><thead><tr><th>Email</th><th>Status</th><th>Access</th><th>Actions</th></tr></thead><tbody>
- {list.map(u=><tr key={u.id}><td>{u.email}</td><td>{u.email_verified_at?'Email verified':u.admin_created?'Admin-approved test (email unverified)':'Email unverified'}</td><td>{u.disabled?'Suspended':'Active'}</td><td>{u.admin_created&&<button className="btn gray" disabled={busy} onClick={()=>reset(u)}>Set / reset password</button>}{' '}<button className="btn gray" disabled={busy} onClick={()=>suspended(u)}>{u.disabled?'Enable':'Suspend'}</button></td></tr>)}
- </tbody></table></div></section><section className="panel"><h2>Abuse reports</h2><table className="table"><thead><tr><th>Alias</th><th>Reason</th><th>Details</th></tr></thead><tbody>{reports.map(r=><tr key={r.id}><td>{r.slug}</td><td>{r.reason}</td><td>{r.details}</td></tr>)}</tbody></table></section></main>
+ </section><section className="panel"><h2>Accounts</h2><p className="muted">Admins can view usernames, email and account status—not existing passwords. Send a secure recovery link instead of sharing stored passwords.</p><div style={{overflowX:'auto'}}><table className="table"><thead><tr><th>Username</th><th>Email</th><th>Joined</th><th>Links</th><th>Status</th><th>Access</th><th>Actions</th></tr></thead><tbody>
+ {list.map(u=><tr key={u.id}><td>{u.username||'Not set (legacy)'}</td><td>{u.email}</td><td>{u.created_at?new Date(u.created_at).toLocaleDateString():"Just now"}</td><td>{u.link_count??0}</td><td>{u.email_verified_at?'Email verified':u.admin_created?'Admin-approved test (email unverified)':'Email unverified'}</td><td>{u.disabled?'Suspended':'Active'}</td><td><button className="btn gray" disabled={busy} onClick={()=>sendRecovery(u)}>{u.email_verified_at?'Email reset link':'Verify recovery email'}</button>{' '}{u.admin_created&&<button className="btn gray" disabled={busy} onClick={()=>reset(u)}>Set test password</button>}{' '}<button className="btn gray" disabled={busy} onClick={()=>suspended(u)}>{u.disabled?'Enable':'Suspend'}</button></td></tr>)}
+ </tbody></table></div></section><section className="panel"><h2>Abuse reports</h2><table className="table"><thead><tr><th>Alias</th><th>Reason</th><th>Details</th></tr></thead><tbody>{reports.map(r=><tr key={r.id}><td>{r.slug}</td><td>{r.reason}</td><td>{r.details}</td></tr>)}</tbody></table></section></div>
 }

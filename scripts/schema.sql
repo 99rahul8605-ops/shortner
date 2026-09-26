@@ -65,6 +65,16 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFA
 -- This is NOT email verification. Existing users stay unaffected.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_created BOOLEAN NOT NULL DEFAULT FALSE;
 
+-- Run ONCE before deploying this update to an existing BingoLink PostgreSQL database.
+-- Existing accounts have NULL usernames and can keep signing in using their email
+-- until they choose a username in Account Settings.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(30);
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_lower_unique
+  ON users (lower(username)) WHERE username IS NOT NULL;
+-- Email ownership must be proved before password-recovery messages are delivered.
+-- Existing verified_at/admin_created status is intentionally unchanged.
+
+
 -- Editable visitor popup text. Safe to run on existing BingoLink V3 installations.
 INSERT INTO settings(key,value) VALUES
  ('popup_title','YOUR LINK IS ALMOST READY'),
