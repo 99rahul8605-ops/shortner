@@ -1,0 +1,1 @@
+import type {MetadataRoute}from 'next';export default function robots():MetadataRoute.Robots{return{rules:[{userAgent:'*',allow:['/','/developers','/privacy','/terms'],disallow:['/admin/','/dashboard','/api/','/go/','/s/','/login','/register','/verify','/reset-password','/forgot-password']}],sitemap:undefined}}

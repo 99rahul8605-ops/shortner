@@ -1,0 +1,4 @@
+import {NextResponse} from 'next/server';import{query}from '@/lib/db';import{sha}from '@/lib/users';import{correctOrigin}from '@/lib/auth';
+export const runtime='nodejs';
+export async function POST(req:Request){if(!correctOrigin(req))return NextResponse.json({error:'Forbidden'},{status:403});const b=await req.json().catch(()=>({}));if(typeof b.token!=='string'||!/^[a-f0-9]{64}$/.test(b.token))return NextResponse.json({error:'Invalid link'},{status:400});
+const r=await query<{user_id:string}>(`UPDATE account_tokens SET used_at=NOW() WHERE token_hash=$1 AND purpose='verify' AND used_at IS NULL AND expires_at>NOW() RETURNING user_id::text`,[sha(b.token)]);if(!r.rows[0])return NextResponse.json({error:'Link expired or already used'},{status:400});await query('UPDATE users SET email_verified_at=COALESCE(email_verified_at,NOW()) WHERE id=$1',[r.rows[0].user_id]);return NextResponse.json({ok:true});}
