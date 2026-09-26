@@ -84,14 +84,14 @@ export default async function ArticlePage({
           <figcaption>Illustrative photograph</figcaption>
         </figure>
         <div className="banner-message-group">
-          {bannerTextAbove && <div className="banner-text-box">{bannerTextAbove}</div>}
+          {bannerTextAbove && <div className="banner-text-box banner-text-box--above">{bannerTextAbove}</div>}
           {adsEnabled && (
             <div className="ad-placement ad-placement-compact">
               <span>ADVERTISEMENT</span>
               <HilltopBanner enabled slot="top" />
             </div>
           )}
-          {bannerTextBelow && <div className="banner-text-box">{bannerTextBelow}</div>}
+          {bannerTextBelow && <div className="banner-text-box banner-text-box--below">{bannerTextBelow}</div>}
         </div>
         <article className="long-article">
           <ContinueTimer
