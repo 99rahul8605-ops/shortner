@@ -5,13 +5,13 @@ import {cookies} from 'next/headers';
 import {query} from '@/lib/db';
 import {cookieOptions} from '@/lib/auth';
 export const accountCookie='bl_user';
-export type User={id:string;email:string;email_verified_at:string|null;disabled:boolean;session_version:number};
+export type User={id:string;email:string;email_verified_at:string|null;admin_created:boolean;disabled:boolean;session_version:number};
 const secret=()=>{const s=process.env.APP_SECRET;if(!s||s.length<32)throw Error('APP_SECRET missing');return new TextEncoder().encode(s)};
 export const sha=(s:string)=>createHash('sha256').update(s).digest('hex');
 export async function currentUser():Promise<User|null>{
  const token=(await cookies()).get(accountCookie)?.value;if(!token)return null;
  try{const {payload}=await jwtVerify(token,secret());if(payload.kind!=='user'||!/^\d+$/.test(String(payload.sub)))return null;
- const r=await query<User>('SELECT id::text,email,email_verified_at::text,disabled,session_version FROM users WHERE id=$1',[payload.sub]);return r.rows[0]&&!r.rows[0].disabled&&payload.ver===r.rows[0].session_version?r.rows[0]:null}catch{return null}
+ const r=await query<User>('SELECT id::text,email,email_verified_at::text,admin_created,disabled,session_version FROM users WHERE id=$1',[payload.sub]);return r.rows[0]&&!r.rows[0].disabled&&payload.ver===r.rows[0].session_version?r.rows[0]:null}catch{return null}
 }
 export async function userToken(id:string,ver:number){return new SignJWT({kind:'user',ver}).setSubject(id).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('7d').sign(secret())}
 export function emailOk(s:unknown):s is string{return typeof s==='string'&&s.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)}
