@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   }
   const email = emailValue.trim().toLowerCase();
   const supplied = body && typeof body === 'object' && 'password' in body ? body.password : undefined;
-  if (supplied!==undefined && !passwordOk(supplied)) return NextResponse.json({error:'Password must be 6–128 characters'},{status:400});
+  if (supplied!==undefined && !passwordOk(supplied)) return NextResponse.json({error:'Password must be 8–128 characters'},{status:400});
   const temporaryPassword = typeof supplied==='string' ? supplied : randomBytes(18).toString('base64url');
   const hash = await bcrypt.hash(temporaryPassword, 12);
   try {

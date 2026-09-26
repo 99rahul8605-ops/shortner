@@ -45,13 +45,13 @@ Public accounts use an HttpOnly browser cookie, not developer API keys. Browser 
 
 | Method | Path | JSON body | Purpose |
 |---|---|---|---|
-| POST | `/api/auth/register` | `{ "email": "a@b.com", "password": "12+ characters" }` | Create user, send email verification |
+| POST | `/api/auth/register` | `{ "email": "a@b.com", "password": "8+ characters" }` | Create user, send email verification |
 | POST | `/api/auth/verify` | `{ "token": "token-from-email" }` | Verify email |
 | POST | `/api/auth/resend` | `{ "email": "a@b.com" }` | Resend pending verification |
 | POST | `/api/auth/login` | `{ "email": "a@b.com", "password": "..." }` | Set signed user cookie |
 | POST | `/api/auth/logout` | none | Clear cookie |
 | POST | `/api/auth/forgot` | `{ "email": "a@b.com" }` | Send reset link, generic success message |
-| POST | `/api/auth/reset` | `{ "token": "...", "password": "new 12+ characters" }` | Change password and invalidate sessions |
+| POST | `/api/auth/reset` | `{ "token": "...", "password": "new 8+ characters" }` | Change password and invalidate sessions |
 | GET | `/api/account/links` | none | Your up to 100 links |
 | POST | `/api/account/links` | destination/title/slug | Create your link |
 | PATCH | `/api/account/links/{id}` | destination/title/enabled | Change your link |
@@ -69,7 +69,7 @@ Public accounts use an HttpOnly browser cookie, not developer API keys. Browser 
 
 ## Owner-admin endpoints (owner session only, **not** developer API keys)
 
-The existing owner account is configured separately through `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH`. After logging in at `/admin/login`, the browser can make these **same-origin, cookie-authenticated** requests:
+The existing owner account is configured separately through `ADMIN_USERNAME` and `ADMIN_PASSWORD`. After logging in at `/admin/login`, the browser can make these **same-origin, cookie-authenticated** requests:
 
 | Method | Endpoint | Purpose |
 |---|---|---|

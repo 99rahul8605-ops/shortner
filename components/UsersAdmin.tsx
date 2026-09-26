@@ -9,7 +9,7 @@ export default function UsersAdmin({users,reports}:{users:U[];reports:R[]}){
  try{const r=await fetch('/api/admin/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,...(password?{password}:{})})});
  const d=await r.json();if(!r.ok)throw Error(d.error||'Failed to create account');setList(prev=>[d.user,...prev]);setIssued({email:d.user.email,password:d.temporaryPassword});setEmail('');setPassword('');}
  catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- async function reset(u:U){const chosen=prompt(`Enter a new password for ${u.email} (6–128 characters). Leave blank to generate a secure password.`);
+ async function reset(u:U){const chosen=prompt(`Enter a new password for ${u.email} (8–128 characters). Leave blank to generate a secure password.`);
  if(chosen===null)return;setError('');setIssued(null);setBusy(true);
  try{const r=await fetch(`/api/admin/users/${u.id}/password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:chosen})});const d=await r.json();if(!r.ok)throw Error(d.error||'Failed to reset');setIssued({email:u.email,password:d.password});}
  catch(e){setError((e as Error).message)}finally{setBusy(false)}}
@@ -19,7 +19,7 @@ export default function UsersAdmin({users,reports}:{users:U[];reports:R[]}){
  return <main className="wrap"><p><a href="/admin">← Owner dashboard</a></p>
  <section className="panel"><h1>Create test account</h1><p className="muted">Owner-created accounts can log in immediately, without Resend. This is <b>admin-approved testing access</b>, not proof of email ownership.</p>
  <form onSubmit={create}><label>Email address<input className="input" type="email" required maxLength={254} autoComplete="off" value={email} onChange={e=>setEmail(e.target.value)}/></label>
- <label>Password (optional; 6–128 characters)<input className="input" type="password" minLength={6} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" placeholder="Leave empty to generate a secure password"/></label>
+ <label>Password (optional; 8–128 characters)<input className="input" type="password" minLength={8} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" placeholder="Leave empty to generate a secure password"/></label>
  <button className="btn" disabled={busy}>{busy?'Working…':'Create test account'}</button></form>
  {error&&<p className="alert" role="alert">{error}</p>}
  {issued&&<div className="panel" role="status"><h2>New password — shown only now</h2><p>{issued.email}</p><p><code>{issued.password}</code></p><button className="btn gray" onClick={()=>navigator.clipboard.writeText(issued.password)}>Copy password</button>{' '}<button className="btn gray" onClick={()=>setIssued(null)}>Hide</button><p className="muted">Passwords are stored as bcrypt hashes. Existing passwords cannot be displayed; reset one if needed.</p></div>}
