@@ -35,3 +35,8 @@
 .long-article>.timer-card{margin:8px 0 22px;position:relative;border:2px solid #b6d1ff;box-shadow:0 5px 20px rgba(20,102,230,.08)}
 .admin-popup-preview{z-index:20000}
 @media(min-width:980px){.reader-page{width:min(900px,94%)}}
+
+/* HilltopAds 300x250: article placements only; reserve room without covering text/buttons. */
+.hilltop-banner{width:300px;max-width:100%;min-height:250px;margin:12px auto;display:flex;align-items:flex-start;justify-content:center}
+.hilltop-banner-host{width:300px;max-width:100%;min-height:250px;overflow:visible}
+.ad-placement:has(.hilltop-banner){min-height:295px;padding:14px 8px}

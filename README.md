@@ -24,3 +24,19 @@ Do not claim an admin-approved email was independently verified. When Resend is 
 In Render > Environment set ADMIN_USERNAME=admin, ADMIN_PASSWORD to a **private plain password 8–128 characters**, NEXT_PUBLIC_SITE_URL=https://shortner-ajk5.onrender.com, and APP_SECRET to at least 32 random characters. Remove old ADMIN_PASSWORD_HASH from Render; it is not used for admin login in this edition. Deploy latest commit. Do not place secrets in GitHub or NEXT_PUBLIC_ variables.
 
 For an origin check, POST /api/admin/login with Origin: https://shortner-ajk5.onrender.com and a **deliberately wrong** 8-character password; 401 means the origin check passed, 403 means the deployed code is stale or site origin is rejected.
+
+
+## HilltopAds article banner (zone 7463121)
+The article visitor route `app/go/[slug]/[step]/page.tsx` mounts
+`components/HilltopBanner.tsx` in the three labeled article ad placements.
+This loads the supplied HilltopAds 300x250 banner tag **only when** the
+Admin setting `ads_enabled` is true. No Hilltop scripts are loaded on the
+homepage, account area, admin panel, or final Get Link page.
+
+The separate HilltopAds popunder/anti-adblock script (zone 7463153) has
+**not** been installed, to avoid overlap with the existing Monetag MultiTag
+and In-Page Push. Monetag is preserved as in the uploaded project.
+
+Rendering and fill depend on HilltopAds, ad-blocking settings and network rules.
+If the network limits repeated instances of one zone on a page, create distinct
+banner zones and use their respective snippets for the extra placements.
