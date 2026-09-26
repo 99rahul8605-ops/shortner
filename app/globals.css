@@ -52,3 +52,10 @@
 .timer-card-compact .continue-main { width: min(210px,100%); font-size: 15px; padding: 10px 15px; margin: 10px auto 0; }
 .bottom-continue .continue-main { width:min(260px,100%); font-size:16px; padding:12px 17px; }
 @media(max-width:600px) { .timer-card-compact { max-width: 100%; padding: 12px; } .ad-placement-compact { margin: 12px auto; } }
+
+/* Admin-editable plain-text boxes surrounding each configured banner. */
+.banner-message-group{margin:16px auto 18px;max-width:100%;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.banner-message-group>.ad-placement{margin:0 auto;width:100%}
+.banner-text-box{background:#fff;border:1px solid #dce4ee;border-left:4px solid #376de2;border-radius:10px;padding:15px 18px;color:#334155;line-height:1.65;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left}
+.long-article .banner-text-box{background:#f8fbff}
+@media(max-width:600px){.banner-text-box{padding:12px 14px;font-size:14px}}

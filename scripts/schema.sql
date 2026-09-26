@@ -105,3 +105,9 @@ CREATE TABLE IF NOT EXISTS payout_requests (
  admin_note VARCHAR(500) NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS payout_requests_user_idx ON payout_requests(user_id,requested_at DESC);
+
+-- Admin-editable informational text around visitor article banners.
+INSERT INTO settings(key,value) VALUES
+ ('banner_text_above','Read the article while your link is being prepared.'),
+ ('banner_text_below','Continue after the countdown finishes.')
+ON CONFLICT (key) DO NOTHING;

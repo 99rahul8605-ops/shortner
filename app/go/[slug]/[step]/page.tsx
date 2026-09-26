@@ -19,6 +19,7 @@ export default async function AdPage({params}:{params:Promise<{slug:string,step:
  const article=articles[step-1];const directUrl=directResult.rows[0]?.url||null;
  const adsEnabled=settings.ads_enabled==='true';
  const secondBannerConfigured=!!process.env.NEXT_PUBLIC_HILLTOP_BANNER_2_SRC;
+ const bannerTextAbove=settings.banner_text_above?.trim();const bannerTextBelow=settings.banner_text_below?.trim();
  return <main className="reader-shell">
   <VisitorMonetag enabled={adsEnabled}/>
   <VisitorPopup directUrl={directUrl} slug={slug} step={step} required={progress.startedAt===0} labels={{
@@ -36,12 +37,12 @@ export default async function AdPage({params}:{params:Promise<{slug:string,step:
     {article && <figure className="article-figure"><img src={article.cover} alt={article.coverAlt} loading="eager"/><figcaption>Illustrative photograph</figcaption></figure>}
     {/* Only ONE instance of each HilltopAds zone on a page. Repeating one zone
         across three placements produced one real ad and two empty boxes. */}
-    {article && adsEnabled && <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled source="primary" /></div>}
+    {article && <div className="banner-message-group">{bannerTextAbove && <div className="banner-text-box">{bannerTextAbove}</div>}{adsEnabled && <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled source="primary" /></div>}{bannerTextBelow && <div className="banner-text-box">{bannerTextBelow}</div>}</div>}
     {article ? <article className="long-article">
       <ContinueTimer slug={slug} step={step} startedAt={progress.startedAt} seconds={seconds(settings,step)}>
         {/* The second banner gets its own separate ad zone; absent configuration
             means no empty advertisement container on the public site. */}
-        {adsEnabled && secondBannerConfigured && <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled source="secondary" /></div>}
+        {adsEnabled && secondBannerConfigured && <div className="banner-message-group">{bannerTextAbove && <div className="banner-text-box">{bannerTextAbove}</div>}<div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled source="secondary" /></div>{bannerTextBelow && <div className="banner-text-box">{bannerTextBelow}</div>}</div>}
         <p className="article-intro">{article.intro} This guide is for general information; confirm requirements, costs, and deadlines with official providers before making decisions.</p>
         {article.sections.map(([heading,body],i)=><div key={heading}>
           <section className="article-section"><h2>{heading}</h2><p>{body}</p></section>
