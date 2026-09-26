@@ -1,13 +1,13 @@
 
 import { Pool, QueryResult, QueryResultRow } from "pg";
 
-const databaseUrl = process.env.DATABASE_URL;
-const encodedCA = process.env.PG_CA_CERT_BASE64;
-
 let pool: Pool | undefined;
 
 function getPool(): Pool {
   if (pool) return pool;
+
+  const databaseUrl = process.env.DATABASE_URL;
+  const encodedCA = process.env.PG_CA_CERT_BASE64;
 
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is missing");
@@ -19,7 +19,7 @@ function getPool(): Pool {
 
   const url = new URL(databaseUrl);
 
-  // Prevent URL options from overriding our SSL settings.
+  // Prevent URL parameters from overriding SSL settings.
   url.searchParams.delete("sslmode");
   url.searchParams.delete("sslcert");
   url.searchParams.delete("sslkey");
@@ -43,7 +43,6 @@ function getPool(): Pool {
   return pool;
 }
 
-// Used by Admin Panel, API routes and user accounts.
 export async function query<
   T extends QueryResultRow = QueryResultRow
 >(

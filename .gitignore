@@ -1,12 +1,8 @@
 node_modules/
 .next/
+.vercel/
 .env
 .env.*
-.vercel/
+!.env.example
 *.log
 *.bak
-node_modules/
-.next/
-.vercel/
-.env
-.env.*
