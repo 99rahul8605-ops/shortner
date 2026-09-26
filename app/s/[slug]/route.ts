@@ -10,5 +10,7 @@ const ipHash=ip?createHmac('sha256',key).update(ip).digest('hex'):null;
 const ua=req.headers.get('user-agent')||'';const uaHash=ua?createHash('sha256').update(ua).digest('hex'):null;
 const country=(req.headers.get('cf-ipcountry')||'').slice(0,3);
 await query('INSERT INTO visits(link_id,ip_hash,ua_hash,country) SELECT id,$1,$2,$3 FROM links WHERE slug=$4',[ipHash,uaHash,country||null,slug]);
-const token=await signProgress({slug,step:1,startedAt:0,popupAt:Date.now(),nonce:randomBytes(16).toString('hex')});
-const r=NextResponse.redirect(new URL(`/go/${slug}/1`,req.url),302);r.cookies.set(progressCookieName,token,cookieOptions(1200));r.headers.set('Cache-Control','no-store');return r;}
+const routeToken=randomBytes(24).toString('base64url');
+const token=await signProgress({slug,step:1,startedAt:0,popupAt:Date.now(),nonce:randomBytes(32).toString('hex'),routeToken});
+const next=new URL(`/go/${encodeURIComponent(slug)}/1`,req.url);next.searchParams.set('vt',routeToken);
+const r=NextResponse.redirect(next,302);r.cookies.set(progressCookieName,token,cookieOptions(1200));r.headers.set('Cache-Control','no-store');return r;}

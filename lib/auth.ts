@@ -18,7 +18,7 @@ export async function isAdmin() {
 export const adminCookieName = adminCookie;
 export const progressCookieName = visitorCookie;
 export function cookieOptions(maxAge: number) { return { httpOnly: true as const, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path: '/', maxAge }; }
-export type Progress = { slug: string; step: number; startedAt: number; popupAt: number; nonce: string };
+export type Progress = { slug: string; step: number; startedAt: number; popupAt: number; nonce: string; routeToken: string };
 export async function signProgress(p: Progress) {
   return new SignJWT({ ...p, purpose: 'progress' }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('20m').sign(secret());
 }
@@ -27,8 +27,8 @@ export async function readProgress(): Promise<Progress|null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret());
-    if (payload.purpose !== 'progress' || typeof payload.slug !== 'string' || typeof payload.step !== 'number' || typeof payload.startedAt !== 'number' || typeof payload.popupAt !== 'number' || typeof payload.nonce !== 'string') return null;
-    return {slug: payload.slug, step: payload.step, startedAt: payload.startedAt, popupAt: payload.popupAt, nonce: payload.nonce};
+    if (payload.purpose !== 'progress' || typeof payload.slug !== 'string' || typeof payload.step !== 'number' || typeof payload.startedAt !== 'number' || typeof payload.popupAt !== 'number' || typeof payload.nonce !== 'string' || typeof payload.routeToken !== 'string' || !/^[a-zA-Z0-9_-]{32}$/.test(payload.routeToken)) return null;
+    return {slug: payload.slug, step: payload.step, startedAt: payload.startedAt, popupAt: payload.popupAt, nonce: payload.nonce, routeToken: payload.routeToken};
   } catch { return null; }
 }
 // Check the browser's Origin against configured public origins, not the

@@ -1,0 +1,9 @@
+# Longer short links and stricter visitor flow
+
+- Newly auto-generated `/s/` slugs are 32 hexadecimal characters (128 bits of secure randomness). Existing links and custom aliases continue to work. This requires **no SQL migration**: the existing `VARCHAR(40)` is sufficient. Custom aliases remain guessable if users choose them.
+- Every `/s/<slug>` visit creates a new signed HttpOnly SameSite=Lax progress cookie **and** a separate 32-character random per-step visitor token (`vt`) carried in the `/go/` URL. A copied final-step URL without the matching browser progress cookie fails and restarts from Step 1. Changing the step number or reusing a previous step token also fails.
+- The popup wait, countdown and final destination still require server-side verification. Tokens expire with the 20-minute progress JWT; starting a new visit resets the browser's cookie. The visitor pages use `Referrer-Policy: no-referrer` and `Cache-Control: no-store`.
+- Caveats: two tabs of the **same browser profile share the cookie**, so a step link may still work between those tabs during the active session. Copying an unlocked destination URL cannot be prevented. URL length by itself does not provide access control. Preventing concurrent step replay across tabs would require persistent per-visit server-side state and possibly tab binding.
+- Existing in-progress visits will restart from Step 1 once this update is deployed (the new JWT requires `routeToken`).
+- Preserve the existing `APP_SECRET`; changing it invalidates all prior sessions. Do not put ad/API keys in GitHub.
+- Local verification: inspect `app/s/[slug]/route.ts`, `app/go/[slug]/[step]/page.tsx`, `/api/continue`, `/api/popup/close`. Manually test fresh profile opens `/go/` link, wrong token, modified step, timer bypass, and full normal flow before production deployment.

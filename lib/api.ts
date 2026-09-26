@@ -19,7 +19,7 @@ export async function userOrKey(req:Request){
 export async function createLink(owner:string,body:Record<string,unknown>){
  const destination=validUrl(body.destination);if(!destination)return NextResponse.json({error:'Valid HTTP(S) destination required'},{status:400});
  const title=typeof body.title==='string'?body.title.trim().slice(0,150):'';
- const slug=typeof body.slug==='string'&&body.slug.trim()?body.slug.trim().toLowerCase():randomBytes(5).toString('hex');
+ const slug=typeof body.slug==='string'&&body.slug.trim()?body.slug.trim().toLowerCase():randomBytes(16).toString('hex');
  if(!/^[a-z0-9][a-z0-9_-]{2,39}$/.test(slug))return NextResponse.json({error:'Alias must be 3–40 lowercase characters'},{status:400});
  try{const r=await query('INSERT INTO links(slug,destination,title,owner_id) VALUES($1,$2,$3,$4) RETURNING id::text,slug,destination,title,enabled,created_at',[slug,destination,title,owner]);return NextResponse.json({link:{...r.rows[0],short_url:`${process.env.NEXT_PUBLIC_SITE_URL||''}/s/${slug}`}},{status:201})}
  catch(e){if((e as {code?:string}).code==='23505')return NextResponse.json({error:'Alias already taken'},{status:409});throw e}

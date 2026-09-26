@@ -7,7 +7,7 @@ export type PopupLabels = {
   title: string; intro: string; heading: string; description: string;
   orange: string; blue: string; middleNote: string;
 };
-export default function VisitorPopup({ directUrl, labels, slug, step, required }: { directUrl: string | null; labels: PopupLabels; slug:string; step:number; required:boolean }) {
+export default function VisitorPopup({ directUrl, labels, slug, step, routeToken, required }: { directUrl: string | null; labels: PopupLabels; slug:string; step:number; routeToken:string; required:boolean }) {
   const [isOpen, setIsOpen] = useState(required);
   const [closing,setClosing]=useState(false);
   const [closeError,setCloseError]=useState('');
@@ -24,7 +24,7 @@ export default function VisitorPopup({ directUrl, labels, slug, step, required }
     if(secondsLeft>0||closing)return;
     setClosing(true);setCloseError('');
     try {
-      const result=await fetch('/api/popup/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,step})});
+      const result=await fetch('/api/popup/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,step,vt:routeToken})});
       const data=await result.json();if(!result.ok)throw new Error(data.error||'Try again');
       window.dispatchEvent(new CustomEvent('bingolink:popup-closed',{detail:{startedAt:data.startedAt}}));
       setIsOpen(false);

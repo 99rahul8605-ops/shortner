@@ -10,11 +10,11 @@ import VisitorPopup from '@/components/VisitorPopup';
 import ContinueTimer from '@/components/ContinueTimer';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 type DirectRow={url:string};
-export default async function AdPage({params}:{params:Promise<{slug:string,step:string}>}){
- const {slug,step:raw}=await params;const step=Number(raw);
+export default async function AdPage({params,searchParams}:{params:Promise<{slug:string,step:string}>,searchParams:Promise<{vt?:string}>}){
+ const {slug,step:raw}=await params;const {vt}=await searchParams;const step=Number(raw);
  if(!Number.isInteger(step)||step<1||step>4||!(/^[a-z0-9_-]{3,40}$/.test(slug)))notFound();
  const link=await getLink(slug);if(!link||!link.enabled)notFound();
- const progress=await readProgress();if(!progress||progress.slug!==slug||progress.step!==step)redirect(`/s/${slug}`);
+ const progress=await readProgress();if(!progress||progress.slug!==slug||progress.step!==step||progress.routeToken!==vt)redirect(`/s/${slug}`);
  const [settings,directResult]=await Promise.all([getSettings(),query<DirectRow>('SELECT url FROM direct_links WHERE enabled=TRUE ORDER BY random() LIMIT 1')]);
  const article=articles[step-1];const directUrl=directResult.rows[0]?.url||null;
  const adsEnabled=settings.ads_enabled==='true';
@@ -22,7 +22,7 @@ export default async function AdPage({params}:{params:Promise<{slug:string,step:
  const bannerTextAbove=settings.banner_text_above?.trim();const bannerTextBelow=settings.banner_text_below?.trim();
  return <main className="reader-shell">
   <VisitorMonetag enabled={adsEnabled}/>
-  <VisitorPopup directUrl={directUrl} slug={slug} step={step} required={progress.startedAt===0} labels={{
+  <VisitorPopup directUrl={directUrl} slug={slug} step={step} routeToken={progress.routeToken} required={progress.startedAt===0} labels={{
     title:settings.popup_title,intro:settings.popup_intro,heading:settings.popup_heading,
     description:settings.popup_description,orange:settings.popup_orange_label,
     blue:settings.popup_blue_label,middleNote:settings.popup_middle_note
@@ -39,7 +39,7 @@ export default async function AdPage({params}:{params:Promise<{slug:string,step:
         across three placements produced one real ad and two empty boxes. */}
     {article && <div className="banner-message-group">{bannerTextAbove && <div className="banner-text-box">{bannerTextAbove}</div>}{adsEnabled && <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled source="primary" /></div>}{bannerTextBelow && <div className="banner-text-box">{bannerTextBelow}</div>}</div>}
     {article ? <article className="long-article">
-      <ContinueTimer slug={slug} step={step} startedAt={progress.startedAt} seconds={seconds(settings,step)}>
+      <ContinueTimer slug={slug} step={step} routeToken={progress.routeToken} startedAt={progress.startedAt} seconds={seconds(settings,step)}>
         {/* The second banner gets its own separate ad zone; absent configuration
             means no empty advertisement container on the public site. */}
         {adsEnabled && secondBannerConfigured && <div className="banner-message-group">{bannerTextAbove && <div className="banner-text-box">{bannerTextAbove}</div>}<div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled source="secondary" /></div>{bannerTextBelow && <div className="banner-text-box">{bannerTextBelow}</div>}</div>}
@@ -51,7 +51,7 @@ export default async function AdPage({params}:{params:Promise<{slug:string,step:
       </ContinueTimer>
     </article> : <>
       <div className="final-info"><h2>Before you leave BingoLink</h2><p>The original link opens after the final countdown. Ad interaction is optional; avoid entering information on unfamiliar websites.</p></div>
-      <ContinueTimer slug={slug} step={step} startedAt={progress.startedAt} seconds={seconds(settings,step)}/>
+      <ContinueTimer slug={slug} step={step} routeToken={progress.routeToken} startedAt={progress.startedAt} seconds={seconds(settings,step)}/>
     </>}
   </div>
   <footer className="reader-footer"><Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · Advertisements are optional</footer>

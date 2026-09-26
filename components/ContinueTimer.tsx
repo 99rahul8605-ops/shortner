@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState,type ReactNode} from 'react';
 
-export default function ContinueTimer({slug,step,startedAt,seconds,children}:{slug:string,step:number,startedAt:number,seconds:number,children?:ReactNode}) {
+export default function ContinueTimer({slug,step,routeToken,startedAt,seconds,children}:{slug:string,step:number,routeToken:string,startedAt:number,seconds:number,children?:ReactNode}) {
   const [actualStart,setActualStart]=useState(startedAt);
   const [remaining,setRemaining]=useState(seconds);
   const [revealed,setRevealed]=useState(false);
@@ -29,7 +29,7 @@ export default function ContinueTimer({slug,step,startedAt,seconds,children}:{sl
     if(!ready || !revealed || loading) return;
     setLoading(true);setError('');
     try{
-      const r=await fetch('/api/continue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,step})});
+      const r=await fetch('/api/continue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,step,vt:routeToken})});
       const d=await r.json();
       if(!r.ok)throw new Error(d.error||'Please try again');
       window.location.assign(d.next);
