@@ -48,11 +48,11 @@ export default function ContinueTimer({slug,step,routeToken,startedAt,seconds,ch
       }}>{revealed?'Go to bottom Continue':'Continue'}</button>}
     </section>
     {children}
-    <section className="bottom-continue" id="final-continue">
-      <p>{step===4?'Your original destination is ready.':'Ready for the next article?'}</p>
-      {ready && revealed ? <button className="continue-main" type="button" disabled={loading} onClick={next}>{loading?'Opening…':step===4?'GET ORIGINAL LINK':'CONTINUE TO NEXT STEP'}</button>
-      : <small>{!ready?'The button will appear when the countdown ends.':'Tap Continue above to unlock this button.'}</small>}
-      {error&&<p className="alert" role="alert">{error}</p>}
-    </section>
+    {ready && revealed && <section className="bottom-continue" id="final-continue">
+      <button className="continue-main" type="button" disabled={loading} onClick={next}>
+        {loading?'Opening…':step===4?'GET ORIGINAL LINK':'CONTINUE TO NEXT STEP'}
+      </button>
+      {error && <p className="alert" role="alert">{error}</p>}
+    </section>}
   </>;
 }

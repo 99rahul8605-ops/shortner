@@ -112,3 +112,9 @@
 .reader-lead h1,.article-section h2{letter-spacing:-.6px}.reader-category{color:#4775e9}
 .reader-step{border-color:#dce6f9;color:#4775e9;background:#f3f7ff}
 .timer-card{background:#eef4ff;border-color:#dbe8ff}.timer.big{color:#4775e9}.continue-main{background:#4775e9}
+
+/* Four distinct banner placements, with a compact timer between 1 and 2. */
+.article-banner-stack{display:flex;flex-direction:column;gap:18px;margin:18px auto 22px;align-items:stretch}
+.article-banner-stack .ad-placement{width:100%;margin:0}
+.bottom-continue{margin-top:24px;padding:12px}
+.bottom-continue .continue-main{margin:0 auto}

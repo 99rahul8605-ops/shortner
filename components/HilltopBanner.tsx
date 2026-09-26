@@ -2,47 +2,52 @@
 
 import { useEffect, useRef } from "react";
 
-/** HilltopAds zone 7463121: inline 300x250 ad for visitor articles only.
- *  The publisher bootstrap anchors the ad at document.currentScript's parent.
- */
-export default function HilltopBanner({ enabled, source = "primary" }: { enabled: boolean; source?: "primary" | "secondary" }) {
-  const container = useRef<HTMLDivElement>(null);
-  // Second placement needs its OWN HilltopAds 300x250 zone. Set this value
-  // to the external s.src URL from that zone's Get Code tag.
-  const secondarySrc = process.env.NEXT_PUBLIC_HILLTOP_BANNER_2_SRC;
-  const validSecondary = (() => {
-    if (!secondarySrc) return null;
-    try { const url = new URL(secondarySrc); return url.protocol === "https:" && url.hostname !== "" ? url.href : null; }
-    catch { return null; }
-  })();
-  const scriptSrc = source === "secondary" ? validSecondary : null;
-  const active = enabled && (source === "primary" || !!scriptSrc);
+type BannerSlot = "top" | "below-timer" | "bottom-one" | "bottom-two";
+
+// Separate publisher tags were provided for the first three placements.
+// Slot four intentionally reuses slot three's tag as requested; the ad
+// network may suppress duplicate instances of the same tag on one page.
+const TAGS: Record<BannerSlot, string> = {
+  "top": "https://unfoldedtrade.com/b.XKVns-duGwlB0/Y/Wncn/De/mz9juYZFUUlzktPcTGcA0ONbjIMAxoMrjSEdt_N/zUQb2-MXzcEmymNxQS",
+  "below-timer": "https://unfoldedtrade.com/b/X.V/sGdWGmlw0AYfWccJ/xePm/9RuqZTUil-ktPGTjch0ANkjNM/1ENdzIMstsNPz/Q/2sM/zuU/3RN-wr",
+  "bottom-one": "https://unfoldedtrade.com/bTXeV/s.dQG/lJ0/Y/Wack/SexmF9iu/Z/U-lskfP/TKcG0TN/jSMx2oMhDeUHtYNwz/Qi2/M/zWYBwMO/QM",
+  "bottom-two": "https://unfoldedtrade.com/bTXeV/s.dQG/lJ0/Y/Wack/SexmF9iu/Z/U-lskfP/TKcG0TN/jSMx2oMhDeUHtYNwz/Qi2/M/zWYBwMO/QM",
+};
+
+export default function HilltopBanner({
+  enabled,
+  slot,
+}: {
+  enabled: boolean;
+  slot: BannerSlot;
+}) {
+  const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const host = container.current;
-    if (!active || !host) return;
+    const host = hostRef.current;
+    if (!enabled || !host) return;
 
-    // Append the supplied bootstrap as an actual script element: HTML script
-    // text inserted through React markup does not execute on hydration.
-    const script = document.createElement("script");
-    script.text = source === "primary"
-      ? HILLTOP_BANNER_BOOTSTRAP
-      : `((url) => { var d=document,s=d.createElement('script'),l=d.currentScript; s.settings={}; s.src=url; s.async=true; s.referrerPolicy='no-referrer-when-downgrade'; l.parentNode.insertBefore(s,l); })(${JSON.stringify(scriptSrc)});`;
-    host.appendChild(script);
+    // Each tag must run inside its own banner element so currentScript
+    // resolves to the intended slot, not to the page-wide document head.
+    const inline = document.createElement("script");
+    inline.text = `((url) => {
+      const s = document.createElement("script");
+      const anchor = document.currentScript;
+      s.settings = {};
+      s.src = url;
+      s.async = true;
+      s.referrerPolicy = "no-referrer-when-downgrade";
+      anchor.parentNode.insertBefore(s, anchor);
+    })(${JSON.stringify(TAGS[slot])});`;
+    host.appendChild(inline);
 
-    return () => {
-      host.replaceChildren();
-    };
-  }, [active, source, scriptSrc]);
+    return () => { host.replaceChildren(); };
+  }, [enabled, slot]);
 
-  if (!active) return null;
-
+  if (!enabled) return null;
   return (
     <div className="hilltop-banner" aria-label="Advertisement">
-      <div ref={container} className="hilltop-banner-host" />
+      <div ref={hostRef} className="hilltop-banner-host" />
     </div>
   );
 }
-
-// Original HilltopAds publisher tag for zone 7463121, unmodified.
-const HILLTOP_BANNER_BOOTSTRAP = '(function(ktv){\nvar d = document,\n    s = d.createElement(\'script\'),\n    l = d.currentScript || d.scripts[d.scripts.length - 1];\ns.settings = ktv || {};\ns.src = "\\/\\/unfoldedtrade.com\\/b.XKVns-duGwlB0\\/Y\\/Wncn\\/De\\/mz9juYZFUUlzktPcTGcA0ONbjIMAxoMrjSEdt_N\\/zUQb2-MXzcEmymNxQS";\ns.async = true;\ns.referrerPolicy = \'no-referrer-when-downgrade\';\nl.parentNode.insertBefore(s, l);\n})({})';
