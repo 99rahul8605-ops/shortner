@@ -57,7 +57,7 @@
 .banner-message-group{margin:16px auto 18px;max-width:100%;display:flex;flex-direction:column;gap:12px;align-items:stretch}
 .banner-message-group>.ad-placement{margin:0 auto;width:100%}
 /* Colour-filled, admin-editable messages above and below the first article banner. */
-.banner-text-box{border:1px solid transparent;border-left:5px solid transparent;border-radius:12px;padding:17px 20px;line-height:1.65;font-size:15px;font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;box-shadow:0 5px 18px rgba(15,23,42,.06)}
+.banner-text-box{border:1px solid transparent;border-left:5px solid transparent;border-radius:12px;padding:17px 20px;line-height:1.65;font-size:15px;font-weight:600;white-space:pre-wrap;overflow-wrap:anywhere;text-align:center;box-shadow:0 5px 18px rgba(15,23,42,.06)}
 .banner-text-box--above{background:linear-gradient(120deg,#fff0b8 0%,#fff8df 100%);border-color:#f1d17b;border-left-color:#d99100;color:#613c00}
 .banner-text-box--below{background:linear-gradient(120deg,#dcefff 0%,#edf7ff 100%);border-color:#a8d6f7;border-left-color:#087cc2;color:#123d67}
 @media(max-width:600px){.banner-text-box{padding:14px 16px;font-size:14px}}
