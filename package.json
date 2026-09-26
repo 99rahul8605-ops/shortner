@@ -1,3 +1,4 @@
+
 {
   "name": "bingolink-personal-shortener",
   "version": "1.0.0",
@@ -18,6 +19,7 @@
     "react-dom": "^19.1.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.0",
     "@types/pg": "^8.11.10",
     "@types/react": "^19.1.0",
