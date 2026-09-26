@@ -1,1 +1,0 @@
-import AccountForms from '@/components/AccountForms';export default async function Page({searchParams}:{searchParams:Promise<{token?:string}>}){const x=await searchParams;return <AccountForms mode="reset" token={x.token||''}/>}
