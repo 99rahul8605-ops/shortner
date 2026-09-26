@@ -28,7 +28,7 @@ For an origin check, POST /api/admin/login with Origin: https://shortner-ajk5.on
 
 ## HilltopAds article banner (zone 7463121)
 The article visitor route `app/go/[slug]/[step]/page.tsx` mounts
-`components/HilltopBanner.tsx` in the three labeled article ad placements.
+`components/HilltopBanner.tsx` in the single primary banner placement (a second distinct zone is optional).
 This loads the supplied HilltopAds 300x250 banner tag **only when** the
 Admin setting `ads_enabled` is true. No Hilltop scripts are loaded on the
 homepage, account area, admin panel, or final Get Link page.
@@ -40,3 +40,7 @@ and In-Page Push. Monetag is preserved as in the uploaded project.
 Rendering and fill depend on HilltopAds, ad-blocking settings and network rules.
 If the network limits repeated instances of one zone on a page, create distinct
 banner zones and use their respective snippets for the extra placements.
+
+## Earnings and revenue sharing
+
+See [EARNINGS_SETUP.md](EARNINGS_SETUP.md). Admin tools are at `/admin/earnings` and user earnings appear in `/dashboard` after applying `scripts/migrate-earnings.sql`. Only actual, verified and attributable HilltopAds earnings are credited (50% to the user, remainder to the site owner). Monetag is excluded. Payout requests are manual and transfers are not automated.
