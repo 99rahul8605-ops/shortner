@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { correctOrigin, isAdmin } from '@/lib/auth';
 import { query } from '@/lib/db';
-import { emailOk } from '@/lib/users';
+import { emailOk, passwordOk } from '@/lib/users';
 
 export const runtime = 'nodejs';
 
@@ -21,7 +21,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
   }
   const email = emailValue.trim().toLowerCase();
-  const temporaryPassword = randomBytes(24).toString('base64url');
+  const supplied = body && typeof body === 'object' && 'password' in body ? body.password : undefined;
+  if (supplied!==undefined && !passwordOk(supplied)) return NextResponse.json({error:'Password must be 6–128 characters'},{status:400});
+  const temporaryPassword = typeof supplied==='string' ? supplied : randomBytes(18).toString('base64url');
   const hash = await bcrypt.hash(temporaryPassword, 12);
   try {
     const created = await query<{id: string; email: string; created_at: string}>(
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       user: { ...created.rows[0], disabled: false, email_verified_at: null, admin_created: true },
       temporaryPassword,
-      message: 'Account created. Copy the temporary password now; it will not be shown again. Email is not verified.'
+      message: 'Account approved for testing. Email ownership has not been verified.'
     }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     if ((e as {code?:string}).code === '23505') {

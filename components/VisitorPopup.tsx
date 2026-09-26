@@ -7,8 +7,10 @@ export type PopupLabels = {
   title: string; intro: string; heading: string; description: string;
   orange: string; blue: string; middleNote: string;
 };
-export default function VisitorPopup({ directUrl, labels }: { directUrl: string | null; labels: PopupLabels }) {
-  const [isOpen, setIsOpen] = useState(true);
+export default function VisitorPopup({ directUrl, labels, slug, step, required }: { directUrl: string | null; labels: PopupLabels; slug:string; step:number; required:boolean }) {
+  const [isOpen, setIsOpen] = useState(required);
+  const [closing,setClosing]=useState(false);
+  const [closeError,setCloseError]=useState('');
   const [secondsLeft, setSecondsLeft] = useState(15);
 
   useEffect(() => {
@@ -18,6 +20,16 @@ export default function VisitorPopup({ directUrl, labels }: { directUrl: string 
     return () => window.clearInterval(interval);
   }, []);
 
+  async function closePopup(){
+    if(secondsLeft>0||closing)return;
+    setClosing(true);setCloseError('');
+    try {
+      const result=await fetch('/api/popup/close',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,step})});
+      const data=await result.json();if(!result.ok)throw new Error(data.error||'Try again');
+      window.dispatchEvent(new CustomEvent('bingolink:popup-closed',{detail:{startedAt:data.startedAt}}));
+      setIsOpen(false);
+    }catch(e){setCloseError((e as Error).message);}finally{setClosing(false)}
+  }
   if (!isOpen) return null;
 
   return (
@@ -27,9 +39,9 @@ export default function VisitorPopup({ directUrl, labels }: { directUrl: string 
           type="button"
           className="modal-close"
           disabled={secondsLeft > 0}
-          onClick={() => setIsOpen(false)}
-          aria-label={secondsLeft > 0 ? `Close available in ${secondsLeft} seconds` : "Close popup"}
-          title={secondsLeft > 0 ? `Available in ${secondsLeft}s` : "Close"}
+          onClick={closePopup}
+          aria-label={secondsLeft > 0 ? "Close locked briefly" : "Close popup"}
+          title={secondsLeft > 0 ? "Close unlocks shortly" : "Close"}
         >
           <span aria-hidden="true">×</span>
         </button>
@@ -67,11 +79,9 @@ export default function VisitorPopup({ directUrl, labels }: { directUrl: string 
           ) : (
             <div className="popup-no-ad">No sponsored links are configured yet.</div>
           )}
-          <p className="close-countdown" aria-live="polite">
-            {secondsLeft > 0
-              ? `Close button available in ${secondsLeft} seconds`
-              : "You can now close this popup to continue reading."}
-          </p>
+          {secondsLeft===0&&<p className="close-countdown">You can now close this popup to continue reading.</p>}
+          {closing&&<p role="status">Opening article…</p>}
+          {closeError&&<p role="alert">{closeError}</p>}
           <p className="popup-optional">You do not have to click an advertisement to access your link.</p>
         </div>
       </div>

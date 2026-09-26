@@ -7,7 +7,7 @@ export const runtime='nodejs';
 export async function POST(req:Request){
  if(!correctOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
  if(!await throttle('register:'+requester(req),5,3600))return NextResponse.json({error:'Try again later'},{status:429});
- const b=await req.json().catch(()=>({}));if(!emailOk(b.email)||!passwordOk(b.password))return NextResponse.json({error:'Valid email and 12–128 character password required'},{status:400});
+ const b=await req.json().catch(()=>({}));if(!emailOk(b.email)||!passwordOk(b.password))return NextResponse.json({error:'Valid email and 6–128 character password required'},{status:400});
  if(!process.env.RESEND_API_KEY||!process.env.EMAIL_FROM)return NextResponse.json({error:'Registration temporarily unavailable: email delivery not configured'},{status:503});
  const email=b.email.trim().toLowerCase();
  try{const r=await query<{id:string}>('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id::text',[email,await bcrypt.hash(b.password,12)]);

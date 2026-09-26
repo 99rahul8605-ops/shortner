@@ -1,76 +1,21 @@
-# BingoLink V3 — public shortener + developer API
+# BingoLink V4 — visitor/ad/admin update
 
-**Next.js 15 + Aiven PostgreSQL + Vercel.** Upgrades BingoLink V2 without deleting your current `links`, `visits`, `settings` or `direct_links`. New visitors can register with their own email/password, verify their email, manage their own links and generate scoped API keys. Your existing owner `/admin/login` and `/admin` continue to work separately. `public/sw.js` is carried forward from V2; confirm its domain and service-worker zone still correspond to YOUR current Monetag installation.
+Based on the existing V3 popup-editable source. This is a complete replacement project, not a single-file patch.
 
-## V3 additions
+## Changes
+- Verified MultiTag is mounted only on visitor `/go/...` pages when Admin > Enable approved ad scripts is ON; the homepage, account, and admin areas have no ad script. Monetag controls ad fill and rendering: gray article blocks are labeled placeholders and do not themselves request in-page ads. Use an approved in-page format/zone if you require ads inside the article.
+- Popup close becomes available after 15 seconds **without showing a numerical timer**. The article countdown starts only after the popup closes and the server issues a signed updated progress cookie. The timer is positioned immediately following the article's first advertisement area. Final step retains its 10-second countdown.
+- Admin popup fields persist in `settings` and are passed to all visitor steps. **Preview popup (unsaved changes)** lets the admin inspect edits before saving. Open a NEW short-link session after saving to see changes live.
+- Admin can create an admin-approved test account with a custom 6–128 character password or generated secure password, and reset admin-created users' passwords. The new password is displayed **one time**. Existing passwords are salted bcrypt hashes, so no plaintext password list is possible. Admin-created users can log in before email verification, but their email is truthfully shown as *unverified*.
+- Registration/reset password minimum is 6 characters as requested. Longer unique passwords are safer; rate limits remain in place.
 
-- `/register`, `/login`, `/forgot-password`, `/reset-password`, `/verify`, `/resend-verification`.
-- Passwords are bcrypt hashed. Verification and recovery use random one-time tokens hashed in PostgreSQL; tokens expire in 30 minutes. Password reset invalidates prior user sessions. Account sessions use signed HttpOnly 7-day cookies.
-- `/dashboard`: create your own short links, enable/disable/delete, view recorded clicks, generate/revoke up to five API keys. Full key shown **once**; only a SHA-256 hash stored. User link ownership is enforced by SQL on each endpoint.
-- `/developers` and `API_DOCS.md`: list every supported API call and cURL usage. Token-auth API endpoints are under `/api/v1/links`.
-- Owner-only `/admin/users`: review registrants, suspend users, review reports. Suspensions invalidate existing account sessions and API authentication.
-- `/report`: visitors can report dangerous links. Owner must actually review reports.
-- Rate limiting in PostgreSQL for registration, login, recovery, key creation, and creation API calls. **Before public launch**, also turn on Cloudflare WAF/Bot Management or CAPTCHA and establish an abuse response policy.
-- Monetag remains enabled only on visitor `/go/...` pages when toggled on; homepage/dashboard/login/user dashboard do not load Monetag. Existing V2 popup and article page layout retained. Ad click is optional.
+## Deploy
+1. Back up your GitHub project and Aiven database. Replace **contents** of repo root with this project, not an extra nested `app/` wrapper. Confirm `app/go/[slug]/[step]/page.tsx` has `VisitorPopup ... labels=`.
+2. Keep Vercel environment variables (`DATABASE_URL`, `PG_CA_CERT_BASE64`, `APP_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `NEXT_PUBLIC_SITE_URL`) secret. Do not upload `.env.local`.
+3. Run `npm install` and `npm run build`, then commit files to the branch Vercel deploys.
+4. On your local/terminal copy with `.env.local`, run `node --env-file=.env.local scripts/init-db.mjs` if prior database migrations haven't been run. This version has no new tables.
+5. On your admin page, switch **Enable approved ad scripts** ON, save, and visit a fresh short link in a private tab (not the owner dashboard). Confirm browser DevTools shows `tag.min.js` loading only on public article pages and that popup labels match Admin Preview. Monetag may decide not to deliver ads for a particular visit.
+6. For testing, create a test account from `/admin/users`, assign a custom 6+ character password or leave blank for a generated one. Existing passwords cannot be viewed; admin can reset admin-created testers.
 
-## Upgrade existing site on Vercel
-
-1. **Back up your Aiven database first.** Do not publish old `.env.local` or old database passwords. If credentials were exposed in chat, rotate them.
-2. Update your existing private GitHub repo **with the contents of this ZIP** (files at repo root, including `app`, `components`, `lib`, `scripts`, `public`). Do not replace Vercel environment variables with an example file.
-3. Existing required Vercel environment variables: `DATABASE_URL`, `PG_CA_CERT_BASE64`, `APP_SECRET` (at least 32 characters), `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `NEXT_PUBLIC_SITE_URL=https://bingolink.site`.
-4. **New required env vars for public registration:** `RESEND_API_KEY` and `EMAIL_FROM` (e.g. `BingoLink <no-reply@bingolink.site>`). Verify your sending domain with your mail provider and follow its DNS instructions. Public registration **fails closed** until configured. Domain inbox and deliverability depend on your provider. Never put API keys in GitHub.
-5. Run the safe, additive migration once from your trusted terminal (same `.env.local` settings as before):
-
-   ```bash
-   npm install
-   node --env-file=.env.local scripts/init-db.mjs
-   ```
-
-   It uses `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`; existing rows remain. Confirm `users`, `account_tokens`, `api_keys`, `request_limits`, and `abuse_reports` exist in Aiven.
-6. Commit to GitHub; let Vercel build a **Preview** deployment first. Configure all new env vars on Preview and Production if you want both to work. Check Preview signup, emailed verification, user login, link creation, API key generation/cURL, and owner admin. Then promote to Production. New or changed env vars require a fresh deployment.
-7. Confirm SSL and `https://bingolink.site/sw.js` return the correct current Monetag worker. If Monetag's installation check requires code on the homepage, ask its support about visitor-only loading rather than silently loading ads on your dashboard.
-8. Update the drafts in `app/privacy/page.tsx` and `app/terms/page.tsx` with a real contact address and local legal compliance before accepting public signups. Public links attract spam/phishing; reporting and suspension tools are only a baseline.
-
-## Core user-facing pages
-
-- `/`: public landing page, no ads
-- `/register`: email + password signup
-- `/verify?token=...`: account email verification
-- `/login`, `/forgot-password`, `/reset-password?token=...`
-- `/dashboard`: account-specific links, analytics and developer API keys
-- `/developers`: API documentation
-- `/report`: link abuse reports
-- `/admin/login`, `/admin`, `/admin/users`: **original owner-only** controls; no ads
-- `/s/{slug}`: publicly shared link, records a visit and starts a timed session
-- `/go/{slug}/{step}`: three article pages plus final Get Link, existing 30+30+30+10 seconds
-
-## Developer documentation
-
-See [API_DOCS.md](API_DOCS.md). Keys are intended for server-side applications only. `GET /api/v1/links` returns up to 100 links; add pagination before large-scale operation.
-
-## Important caveats
-
-This is an extensible MVP, **not a fully audited public shortener**. Public registration also needs production mail delivery, monitored abuse reports, backups, email reputation, bot defenses, terms/privacy review, user data deletion and likely stronger account protections (e.g. passkeys or MFA) before growing traffic. Database visits are **not** Monetag impressions or payable earnings. No automatic ad clicking or ad-click requirements are implemented.
-
-The archive has been checked for project structure and import routes. Dependency installation and a full `next build` were not completed in the artifact environment; a real Vercel Preview build and end-to-end test are required before production promotion.
-
-### Public registration is NOT enabled just by deploying code
-
-Make sure the sender domain is verified with your mail provider, set the two new mail environment variables, run database migration, and complete a signup → inbox → verify → login → create link → API key → API call test on Vercel Preview first. Only then move to production. End-user billing, revenue sharing and automatic payouts are **not** included in V3.
-
-## Owner-created test accounts (V3 testing patch)
-
-Email sending can be configured later. To test now, sign in at `/admin/login` with your existing owner credentials, then go to `/admin/users`. Enter a test user's real email and click **Create account and generate password**. A cryptographically random temporary password is displayed only once. Give it to the tester through a secure channel; the account can log in at `/login` and use `/dashboard` and the developer API. The password is stored only as a bcrypt hash.
-
-**Important:** The account is explicitly marked `admin_created`, **not** email-verified. Only these owner-created accounts bypass the email-verification gate for testing. Normal public signups still require `RESEND_API_KEY` and `EMAIL_FROM`, which must be set before opening self-service registration. Without email sending, password-reset emails won't work; the owner should make sure test passwords can be recovered through a secure process. Do not provision accounts for arbitrary addresses without permission.
-
-Migration: run `node --env-file=.env.local scripts/init-db.mjs` after updating. It adds `users.admin_created` without changing existing users. Then deploy the updated project to Vercel. The new `POST /api/admin/users` route requires a current owner session and a same-origin browser request; returns a one-time temporary password, and returns HTTP 409 if the email already exists. Do not expose returned credentials in screenshots or logs.
-
-## Screenshot-style popup update
-
-This package updates the public visitor popup on all `/go/{slug}/{step}` pages. It uses a dimmed full-screen background, circular X that unlocks after 15 seconds, white instruction card, tall rounded white panel, and large orange/blue sponsored link buttons. Both sponsored buttons open the **same randomly selected active Direct Link for that visit** in a new tab. The page's **actual** Continue button is separate, after its normal 30/30/30/10-second countdown. Advertisement engagement is optional. The popup is not mounted on `/admin`, `/dashboard`, the homepage, registration, or link creation.
-
-To update: replace the files in your private GitHub repo with the ZIP contents (not the top-level folder), commit, and verify the Vercel Preview deployment before promoting to production. If your current public ZIP is already V3 with admin-created accounts, this is a code-only UI patch: no additional database migration is required.
-
-## Editable popup labels (V3 update)
-Admin → **Visitor popup text** lets the owner change the popup title, intro, heading, descriptive text, two sponsored-button labels and the message between them. These values live in PostgreSQL. Run `node --env-file=.env.local scripts/init-db.mjs` once after deploying; it inserts any missing default settings without resetting existing links, users, or ad settings. The 15-second close countdown, ad disclosure and separate actual Continue control remain unchanged. Never label an ad as a Continue or Download control.
+## Security
+Do not claim an admin-approved email was independently verified. When Resend is configured, users can verify the email they control. Do not label sponsored URLs as navigation or require ad clicks.

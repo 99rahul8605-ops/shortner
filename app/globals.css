@@ -29,3 +29,9 @@
 .popup-no-ad{padding:28px 12px;background:#f3f6fb;width:100%;border-radius:10px;color:#475569}
 @media(max-width:600px){.visitor-overlay{padding:20px 12px 28px}.visitor-modal{gap:15px}.modal-close{width:56px;height:56px;font-size:48px}.modal-body{min-height:455px;padding:20px 19px 24px;gap:14px}.modal-body .popup-subheading{margin-bottom:15px}.sponsor-button{min-height:62px}.modal-body .close-countdown{margin-top:15px}}
 @media(prefers-reduced-motion:reduce){.sponsor-button{transition:none}}
+
+/* V4: timer starts after popup closes and sits next to first approved ad area. */
+.reader-page>.ad-placement{margin-bottom:8px}
+.long-article>.timer-card{margin:8px 0 22px;position:relative;border:2px solid #b6d1ff;box-shadow:0 5px 20px rgba(20,102,230,.08)}
+.admin-popup-preview{z-index:20000}
+@media(min-width:980px){.reader-page{width:min(900px,94%)}}

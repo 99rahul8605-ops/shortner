@@ -15,7 +15,7 @@ export async function currentUser():Promise<User|null>{
 }
 export async function userToken(id:string,ver:number){return new SignJWT({kind:'user',ver}).setSubject(id).setProtectedHeader({alg:'HS256'}).setIssuedAt().setExpirationTime('7d').sign(secret())}
 export function emailOk(s:unknown):s is string{return typeof s==='string'&&s.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)}
-export function passwordOk(s:unknown):s is string{return typeof s==='string'&&s.length>=12&&s.length<=128}
+export function passwordOk(s:unknown):s is string{return typeof s==='string'&&s.length>=6&&s.length<=128}
 export function validUrl(s:unknown){if(typeof s!=='string'||s.length>2048)return null;try{const u=new URL(s);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||/^(localhost|.*\.localhost|.*\.local)$/i.test(u.hostname))return null;return u.toString()}catch{return null}}
 export async function throttle(bucket:string,limit:number,secs:number){
  const k=createHmac('sha256',process.env.APP_SECRET||'').update(bucket).digest('hex');
