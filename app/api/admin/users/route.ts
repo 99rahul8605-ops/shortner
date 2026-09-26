@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { correctOrigin, isAdmin } from '@/lib/auth';
 import { query } from '@/lib/db';
-import { emailOk, passwordOk } from '@/lib/users';
+import { emailOk, passwordOk, usernameOk } from '@/lib/users';
 
 export const runtime = 'nodejs';
 
@@ -21,16 +21,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
   }
   const email = emailValue.trim().toLowerCase();
+  const requestedUsername=body && typeof body==='object' && 'username' in body ? body.username : '';
+  const username=typeof requestedUsername==='string' && requestedUsername.trim() ? requestedUsername.trim().toLowerCase() : 'test_'+randomBytes(6).toString('hex');
+  if(!usernameOk(username))return NextResponse.json({error:'Username must be 3–30 letters, numbers or underscores and start with a letter'},{status:400});
   const supplied = body && typeof body === 'object' && 'password' in body ? body.password : undefined;
   if (supplied!==undefined && !passwordOk(supplied)) return NextResponse.json({error:'Password must be 8–128 characters'},{status:400});
   const temporaryPassword = typeof supplied==='string' ? supplied : randomBytes(18).toString('base64url');
   const hash = await bcrypt.hash(temporaryPassword, 12);
   try {
-    const created = await query<{id: string; email: string; created_at: string}>(
-      `INSERT INTO users (email, password_hash, admin_created)
-       VALUES ($1, $2, TRUE)
-       RETURNING id::text, email, created_at::text`,
-      [email, hash]
+    const created = await query<{id: string; username: string; email: string; created_at: string}>(
+      `INSERT INTO users (username, email, password_hash, admin_created)
+       VALUES ($1, $2, $3, TRUE)
+       RETURNING id::text, username, email, created_at::text`,
+      [username,email,hash]
     );
     // Do not log this response, send it through email, or include it in a URL.
     return NextResponse.json({
@@ -40,7 +43,7 @@ export async function POST(req: Request) {
     }, { status: 201, headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     if ((e as {code?:string}).code === '23505') {
-      return NextResponse.json({ error: 'An account with that email already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'Username or email already registered' }, { status: 409 });
     }
     throw e;
   }

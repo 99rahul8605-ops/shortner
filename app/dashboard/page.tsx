@@ -26,7 +26,7 @@ export default async function Page() {
       COUNT(DISTINCT l.id) FILTER (WHERE l.enabled)::int AS active
       FROM links l LEFT JOIN visits v ON v.link_id=l.id WHERE l.owner_id=$1`, [u.id]),
   ]);
-  return <UserDashboard email={u.email} initialLinks={l.rows as never}
+  return <UserDashboard username={u.username} email={u.email} initialLinks={l.rows as never}
     initialKeys={k.rows as never} dailyVisits={d.rows}
     totals={totals.rows[0] || {links: 0, visits: 0, active: 0}} />;
 }

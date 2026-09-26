@@ -6,6 +6,7 @@ export const runtime='nodejs';
 export async function POST(req:Request){
  if(!correctOrigin(req))return NextResponse.json({error:'Forbidden'},{status:403});
  if(!await throttle('resend:'+requester(req),3,3600))return NextResponse.json({error:'Try again later'},{status:429});
+ if(!process.env.RESEND_API_KEY||!process.env.EMAIL_FROM)return NextResponse.json({error:'Recovery email is not configured yet'},{status:503});
  const b=await req.json().catch(()=>({}));if(!emailOk(b.email))return NextResponse.json({error:'Invalid email'},{status:400});
  const r=await query<{id:string}>('SELECT id::text FROM users WHERE email=$1 AND disabled=FALSE AND email_verified_at IS NULL',[b.email.trim().toLowerCase()]);
  if(r.rows[0]&&process.env.RESEND_API_KEY&&process.env.EMAIL_FROM){

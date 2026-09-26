@@ -1,2 +1,3 @@
 import LoginForm from '@/components/LoginForm';
-export default function Login(){return <main className="narrow"><div className="panel"><h1>BingoLink Admin</h1><p className="muted">Private dashboard for the site owner.</p><LoginForm/></div></main>}
+import PublicShell from '@/components/PublicShell';
+export default function Login(){return <PublicShell><div className="site-centered-page"><div className="site-page-icon">◈</div><span className="site-overline">SECURE OWNER ACCESS</span><h1>Admin sign in</h1><p className="site-lead">Access your BingoLink management workspace.</p><section className="site-form-card"><LoginForm/><div className="site-card-links"><a href="/">← Back to website</a></div></section></div></PublicShell>}
