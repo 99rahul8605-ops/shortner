@@ -1,52 +1,27 @@
-#!/usr/bin/env python3
-"""Patch missing required VisitorPopup props in every route page in this checkout.
-
-Run from repository root: python3 fix-bingolink-popup-props.py
-Only changes app/go/[slug]/[step]/page.tsx paths that need this exact fix.
-"""
-from pathlib import Path
-import re
-import sys
-
-root = Path.cwd()
-files = sorted(
-    p for p in root.rglob('page.tsx')
-    if p.parts[-5:] == ('app', 'go', '[slug]', '[step]', 'page.tsx')
-    and not any(x in p.parts for x in ('.next', 'node_modules', '.git'))
-)
-if not files:
-    print('No matching app/go/[slug]/[step]/page.tsx found. Check your project directory.')
-    sys.exit(1)
-
-changed = 0
-already_correct = 0
-for path in files:
-    content = path.read_text(encoding='utf-8')
-    all_tags = re.findall(r'<VisitorPopup\b[^>]*>', content, flags=re.DOTALL)
-    if not all_tags:
-        print(f'No VisitorPopup tag in {path.relative_to(root)}')
-        continue
-    new_content = content
-    for tag in all_tags:
-        if all(re.search(r'\b'+name+r'\s*=', tag) for name in ('slug', 'step', 'required')):
-            already_correct += 1
-            continue
-        if 'directUrl={directUrl}' not in tag:
-            print(f'Skipping unfamiliar VisitorPopup call in {path.relative_to(root)}')
-            continue
-        fixed = tag
-        extras = [('slug', '{slug}'), ('step', '{step}'), ('required', '{progress.startedAt === 0}')]
-        insert = ''.join(f' {name}={value}' for name,value in extras if not re.search(r'\b'+name+r'\s*=', tag))
-        fixed = fixed.replace('directUrl={directUrl}', 'directUrl={directUrl}'+insert, 1)
-        new_content = new_content.replace(tag, fixed, 1)
-    if new_content != content:
-        path.write_text(new_content, encoding='utf-8')
-        changed += 1
-        print(f'FIXED: {path.relative_to(root)}')
-    else:
-        print(f'UNCHANGED: {path.relative_to(root)}')
-
-print(f'Changed files: {changed}; already-correct popup calls: {already_correct}')
-if not changed and not already_correct:
-    sys.exit(2)
-print('Next: git diff, git add, git commit, git push; verify Vercel deploys the NEW commit.')
+import {notFound,redirect} from 'next/navigation';
+import Link from 'next/link';
+import {readProgress} from '@/lib/auth';
+import {getLink,getSettings,seconds} from '@/lib/data';
+import {query} from '@/lib/db';
+import {articles} from '@/lib/articles';
+import VisitorMonetag from '@/components/VisitorMonetag';
+import VisitorPopup from '@/components/VisitorPopup';
+import ContinueTimer from '@/components/ContinueTimer';
+export const runtime='nodejs';export const dynamic='force-dynamic';
+type DirectRow={url:string};
+export default async function AdPage({params}:{params:Promise<{slug:string,step:string}>}){
+ const {slug,step:raw}=await params;const step=Number(raw);
+ if(!Number.isInteger(step)||step<1||step>4||!(/^[a-z0-9_-]{3,40}$/.test(slug)))notFound();
+ const link=await getLink(slug);if(!link||!link.enabled)notFound();
+ const progress=await readProgress();if(!progress||progress.slug!==slug||progress.step!==step)redirect(`/s/${slug}`);
+ const [settings,directResult]=await Promise.all([getSettings(),query<DirectRow>('SELECT url FROM direct_links WHERE enabled=TRUE ORDER BY random() LIMIT 1')]);
+ const article=articles[step-1];const directUrl=directResult.rows[0]?.url||null;
+ return <main className="reader-shell"><VisitorMonetag enabled={settings.ads_enabled==='true'}/><VisitorPopup directUrl={directUrl} slug={slug} step={step} required={progress.startedAt===0} labels={{
+  title:settings.popup_title,intro:settings.popup_intro,heading:settings.popup_heading,
+  description:settings.popup_description,orange:settings.popup_orange_label,
+  blue:settings.popup_blue_label,middleNote:settings.popup_middle_note
+}}/><header className="reader-header"><Link href="/" className="reader-brand">BingoLink</Link><span className="reader-step">{step===4?'Get Link':`Step ${step} of 3`}</span></header><div className="reader-page">
+ <div className="reader-lead"><span className="reader-category">{article?.tag||'YOUR LINK'}</span><h1>{article?.title||'Your destination is ready'}</h1><p>{article?.intro||'You are almost at the original website. Continue after the final countdown.'}</p></div>
+ {article?<><figure className="article-figure"><img src={article.cover} alt={article.coverAlt} loading="eager"/><figcaption>Illustrative photograph</figcaption></figure><div className="ad-placement"><span>ADVERTISEMENT</span><p>Monetag approved advertising may appear here when available.</p></div><article className="long-article"><ContinueTimer slug={slug} step={step} startedAt={progress.startedAt} seconds={seconds(settings,step)}><p className="article-intro">{article.intro} This guide is for general information; confirm requirements, costs, and deadlines with official providers before making decisions.</p>{article.sections.slice(0,4).map(([heading,body],i)=><div key={heading}><section className="article-section"><h2>{heading}</h2><p>{body}</p></section>{i===1&&<figure className="article-figure inline-figure"><img src={article.inline} alt={article.inlineAlt} loading="lazy"/><figcaption>Related image</figcaption></figure>}{i===2&&<div className="ad-placement"><span>ADVERTISEMENT</span><p>Sponsored content is separate from the article.</p></div>}</div>)}{article.sections.slice(4).map(([heading,body])=><section className="article-section" key={heading}><h2>{heading}</h2><p>{body}</p></section>)}<div className="ad-placement"><span>ADVERTISEMENT</span><p>Sponsored messages may appear here when available.</p></div></ContinueTimer></article></>:<><div className="ad-placement"><span>ADVERTISEMENT</span><p>Sponsored messages may appear here.</p></div><div className="final-info"><h2>Before you leave BingoLink</h2><p>The original link opens after the final countdown. Ad interaction is optional; avoid entering information on unfamiliar websites.</p></div><ContinueTimer slug={slug} step={step} startedAt={progress.startedAt} seconds={seconds(settings,step)}/></>}
+ </div><footer className="reader-footer"><Link href="/privacy">Privacy</Link> · <Link href="/terms">Terms</Link> · Advertisements are optional</footer></main>;
+}
