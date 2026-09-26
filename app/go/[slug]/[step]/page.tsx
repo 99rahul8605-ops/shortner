@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { readProgress } from "@/lib/auth";
+import { readProgress, loadVisit } from "@/lib/auth";
 import { getLink, getSettings, seconds } from "@/lib/data";
 import { query } from "@/lib/db";
 import { articles } from "@/lib/articles";
@@ -34,10 +34,18 @@ export default async function ArticlePage({
     redirect(`/s/${encodeURIComponent(slug)}`);
   }
 
+  const visit = await loadVisit(progress);
+  if (!visit) redirect(`/s/${encodeURIComponent(slug)}`);
+
   // Old /go/slug/4 bookmarks are forwarded to the dedicated ad-free page.
   // Get Link is NOT a fourth article step.
   if (step === 4) {
+    if (visit.stage !== "final") redirect(`/s/${encodeURIComponent(slug)}`);
     redirect(`/get/${encodeURIComponent(slug)}?vt=${encodeURIComponent(progress.routeToken)}`);
+  }
+
+  if (!["popup", "timing", "revealed"].includes(visit.stage)) {
+    redirect(`/s/${encodeURIComponent(slug)}`);
   }
 
   const [settings, directResult] = await Promise.all([
@@ -58,7 +66,7 @@ export default async function ArticlePage({
         slug={slug}
         step={step}
         routeToken={progress.routeToken}
-        required={progress.startedAt === 0}
+        required={visit.stage === "popup"}
         labels={{
           title: settings.popup_title,
           intro: settings.popup_intro,
@@ -98,7 +106,7 @@ export default async function ArticlePage({
             slug={slug}
             step={step}
             routeToken={progress.routeToken}
-            startedAt={progress.startedAt}
+            startedAt={visit.startedAt}
             seconds={seconds(settings, step)}
           >
             {adsEnabled && (

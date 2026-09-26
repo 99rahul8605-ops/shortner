@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { readProgress } from "@/lib/auth";
+import { readProgress, loadVisit } from "@/lib/auth";
 import { getLink, getSettings, seconds } from "@/lib/data";
 import ContinueTimer from "@/components/ContinueTimer";
 
@@ -31,9 +31,10 @@ export default async function GetLinkPage({
     redirect(`/s/${encodeURIComponent(slug)}`);
   }
 
+  const visit = await loadVisit(progress);
+  if (!visit || visit.stage !== "final") redirect(`/s/${encodeURIComponent(slug)}`);
   const settings = await getSettings();
-  // Accept an already-running legacy final session created by the older /go/4 route.
-  const finalStart = progress.startedAt > 0 ? progress.startedAt : progress.popupAt;
+  const finalStart = visit.startedAt;
 
   return (
     <main className="reader-shell">

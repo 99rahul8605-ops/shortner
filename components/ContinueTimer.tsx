@@ -25,6 +25,7 @@ export default function ContinueTimer({
   const [actualStart, setActualStart] = useState(startedAt);
   const [remaining, setRemaining] = useState(seconds);
   const [revealed, setRevealed] = useState(false);
+  const [continueToken, setContinueToken] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -51,15 +52,42 @@ export default function ContinueTimer({
 
   const ready = actualStart > 0 && remaining === 0;
 
-  async function next() {
-    if (!ready || (!final && !revealed) || loading) return;
+  async function revealBottom() {
+    if (!ready || revealed || loading || final) return;
     setLoading(true);
     setError("");
     try {
       const response = await fetch("/api/continue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, step, vt: routeToken }),
+        body: JSON.stringify({ slug, step, vt: routeToken, action: "reveal" }),
+      });
+      const data = await response.json();
+      if (!response.ok || typeof data.continueToken !== "string") {
+        throw new Error(data.error || "Please try again");
+      }
+      // No automatic scrolling: the visitor scrolls down themselves.
+      setContinueToken(data.continueToken);
+      setRevealed(true);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function next() {
+    if (!ready || (!final && (!revealed || !continueToken)) || loading) return;
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/continue", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug, step, vt: routeToken,
+          action: final ? "finish" : "advance",
+          ...(final ? {} : { continueToken }),
+        }),
       });
       const data = await response.json();
       if (!response.ok || typeof data.next !== "string") {
@@ -99,9 +127,10 @@ export default function ContinueTimer({
         ) : !revealed ? (
           <>
             <div className="timer-compact-label">Your wait is complete</div>
-            <button className="continue-main" type="button" onClick={() => setRevealed(true)}>
-              Continue
+            <button className="continue-main" type="button" disabled={loading} onClick={revealBottom}>
+              {loading ? "Checking…" : "Continue"}
             </button>
+            {error && <p className="alert" role="alert">{error}</p>}
           </>
         ) : (
           <p className="scroll-hint" role="status">Scroll down and tap Continue below.</p>
