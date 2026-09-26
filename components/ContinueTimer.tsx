@@ -1,0 +1,8 @@
+'use client';
+import {useEffect,useState} from 'react';
+export default function ContinueTimer({slug,step,startedAt,seconds}:{slug:string,step:number,startedAt:number,seconds:number}){
+const [remaining,setRemaining]=useState(Math.max(0,seconds-Math.floor((Date.now()-startedAt)/1000)));
+const [error,setError]=useState(''),[loading,setLoading]=useState(false);
+useEffect(()=>{const tick=()=>setRemaining(Math.max(0,seconds-Math.floor((Date.now()-startedAt)/1000)));tick();const id=setInterval(tick,500);return()=>clearInterval(id)},[seconds,startedAt]);
+async function next(){setLoading(true);setError('');try{const r=await fetch('/api/continue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug,step})});const d=await r.json();if(!r.ok)throw new Error(d.error||'Please try again');window.location.assign(d.next);}catch(e){setError((e as Error).message);setLoading(false)}}
+return <div className="panel" style={{textAlign:'center'}}><h2>{step===4?'Your original link is almost ready':'Ready for the next step?'}</h2><p className="muted">You do not need to click any advertisement to continue.</p><div className="timer" aria-live="polite">{String(Math.floor(remaining/60)).padStart(2,'0')}:{String(remaining%60).padStart(2,'0')}</div><button className="btn" type="button" disabled={remaining>0||loading} onClick={next}>{loading?'Please wait…':step===4?'Get Original Link':remaining>0?'Continue unlocks shortly':'Continue'}</button>{error&&<p className="alert">{error}</p>}<p><small>{step===4?'The button redirects to the original destination.':'The button takes you to the next informational page.'}</small></p></div>}
