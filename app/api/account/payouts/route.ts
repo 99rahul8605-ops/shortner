@@ -5,7 +5,6 @@ export const runtime='nodejs';
 export async function POST(req:Request){
  if(!correctOrigin(req))return NextResponse.json({error:'Invalid origin'},{status:403});
  const u=await currentUser();if(!u)return NextResponse.json({error:'Unauthorized'},{status:401});
- if(!u.email_verified_at)return NextResponse.json({error:'Verify your recovery email before requesting withdrawals'},{status:403});
  const data=await req.json().catch(()=>({}));
  if(!Number.isSafeInteger(data.amountCents)||data.amountCents<1000)return NextResponse.json({error:'Minimum request is $10'},{status:400});
  const client=await db().connect();

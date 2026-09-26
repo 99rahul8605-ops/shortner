@@ -9,9 +9,9 @@ export async function POST(req:Request){
  const b=await req.json().catch(()=>({}));
  if(!emailOk(b.email))return NextResponse.json({error:'Enter your recovery email'},{status:400});
  const email=b.email.trim().toLowerCase();
- const generic='If the email belongs to a verified account, a password-reset link will be sent.';
+ const generic='If an account uses this email, a one-time password-reset link will be sent.';
  if(!process.env.RESEND_API_KEY||!process.env.EMAIL_FROM)return NextResponse.json({error:'Recovery email is temporarily unavailable. Contact support.'},{status:503});
- const r=await query<{id:string}>(`SELECT id::text FROM users WHERE lower(email)=$1 AND disabled=FALSE AND email_verified_at IS NOT NULL`,[email]);
+ const r=await query<{id:string}>(`SELECT id::text FROM users WHERE lower(email)=$1 AND disabled=FALSE`,[email]);
  if(r.rows[0]){
    const token=await makeAccountToken(r.rows[0].id,'reset');
    try{await sendAccountEmail(email,'Reset your BingoLink password',
