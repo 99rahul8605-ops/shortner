@@ -24,3 +24,39 @@ INSERT INTO settings(key,value) VALUES
  ('monetag_script_url',''),('inpage_script_url',''),('ads_enabled','false'),
  ('ad_1_seconds','30'),('ad_2_seconds','30'),('ad_3_seconds','30'),('final_seconds','10')
 ON CONFLICT (key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS direct_links (
+  id BIGSERIAL PRIMARY KEY,
+  label VARCHAR(100) NOT NULL,
+  url TEXT NOT NULL CHECK (url ~* '^https://'),
+  enabled BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Public users and scoped developer API keys. Existing personal links retain NULL owner_id.
+CREATE TABLE IF NOT EXISTS users (
+ id BIGSERIAL PRIMARY KEY, email TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL,
+ email_verified_at TIMESTAMPTZ, session_version INTEGER NOT NULL DEFAULT 0, disabled BOOLEAN NOT NULL DEFAULT FALSE,
+ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE links ADD COLUMN IF NOT EXISTS owner_id BIGINT REFERENCES users(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS links_owner_idx ON links(owner_id,created_at DESC);
+CREATE TABLE IF NOT EXISTS account_tokens (
+ id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ purpose VARCHAR(16) NOT NULL CHECK (purpose IN ('verify','reset')), token_hash VARCHAR(64) UNIQUE NOT NULL,
+ expires_at TIMESTAMPTZ NOT NULL, used_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS api_keys (
+ id BIGSERIAL PRIMARY KEY, user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ name VARCHAR(80) NOT NULL, key_prefix VARCHAR(24) NOT NULL, key_hash VARCHAR(64) UNIQUE NOT NULL,
+ last_used_at TIMESTAMPTZ, revoked_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS api_keys_user_idx ON api_keys(user_id);
+CREATE TABLE IF NOT EXISTS request_limits (bucket TEXT PRIMARY KEY, hits INTEGER NOT NULL DEFAULT 1, expires_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE IF NOT EXISTS abuse_reports (
+ id BIGSERIAL PRIMARY KEY, link_id BIGINT REFERENCES links(id) ON DELETE SET NULL,
+ slug VARCHAR(40) NOT NULL, reason VARCHAR(60) NOT NULL, details VARCHAR(1000) NOT NULL DEFAULT '',
+ created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
