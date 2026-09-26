@@ -43,14 +43,16 @@ export default async function AdPage({params,searchParams}:{params:Promise<{slug
       <ContinueTimer slug={slug} step={step} routeToken={progress.routeToken} startedAt={progress.startedAt} seconds={seconds(settings,step)}>
         {adsEnabled && <div className="article-banner-stack">
           <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled slot="below-timer" /></div>
-          <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled slot="bottom-one" /></div>
-          <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled slot="bottom-two" /></div>
         </div>}
         <p className="article-intro">{article.intro} This guide is for general information; confirm requirements, costs, and deadlines with official providers before making decisions.</p>
         {article.sections.map(([heading,body],i)=><div key={heading}>
           <section className="article-section"><h2>{heading}</h2><p>{body}</p></section>
           {i===1&&<figure className="article-figure inline-figure"><img src={article.inline} alt={article.inlineAlt} loading="lazy"/><figcaption>Related image</figcaption></figure>}
         </div>)}
+        {adsEnabled && <div className="article-banner-stack" aria-label="Bottom advertisements">
+          <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled slot="bottom-one" /></div>
+          <div className="ad-placement ad-placement-compact"><span>ADVERTISEMENT</span><HilltopBanner enabled slot="bottom-two" /></div>
+        </div>}
       </ContinueTimer>
     </article> : <>
       <div className="final-info"><h2>Before you leave BingoLink</h2><p>The original link opens after the final countdown. Ad interaction is optional; avoid entering information on unfamiliar websites.</p></div>

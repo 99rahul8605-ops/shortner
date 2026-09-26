@@ -37,15 +37,20 @@ export default function ContinueTimer({slug,step,routeToken,startedAt,seconds,ch
   }
   return <>
     <section className="timer-card timer-card-compact" id="continue-timer">
-      <div className="timer-compact-label">{step===4?'Your link is almost ready':'Next step is almost ready'}</div>
-      <div className="timer-compact-clock" role="timer" aria-live="off">
-        {String(Math.floor(remaining/60)).padStart(2,'0')}:{String(remaining%60).padStart(2,'0')}
-      </div>
-      <p className="timer-compact-note">{actualStart<=0?'Close the popup to start your timer.':ready?'Timer complete. You can continue.':'Please wait for the countdown.'}</p>
-      {ready && <button className="continue-main" type="button" onClick={()=>{
-        setRevealed(true);
-        window.setTimeout(()=>document.getElementById('final-continue')?.scrollIntoView({behavior:'smooth',block:'center'}),0);
-      }}>{revealed?'Go to bottom Continue':'Continue'}</button>}
+      {!ready ? <>
+        <div className="timer-compact-label">{step===4?'Your link is almost ready':'Next step is almost ready'}</div>
+        <div className="timer-compact-clock" role="timer" aria-live="off">
+          {String(Math.floor(remaining/60)).padStart(2,'0')}:{String(remaining%60).padStart(2,'0')}
+        </div>
+        <p className="timer-compact-note">{actualStart<=0?'Close the popup to start your timer.':'Please wait for the countdown.'}</p>
+      </> : !revealed ? <>
+        <div className="timer-compact-label">Your wait is complete</div>
+        <button className="continue-main" type="button" onClick={()=>setRevealed(true)}>
+          Continue
+        </button>
+      </> : <>
+        <p className="scroll-hint" role="status">Scroll down and tap Continue below.</p>
+      </>}
     </section>
     {children}
     {ready && revealed && <section className="bottom-continue" id="final-continue">
