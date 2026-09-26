@@ -1,8 +1,80 @@
 "use client";
-import {useEffect,useState} from 'react';
-export default function VisitorPopup({directUrl}:{directUrl:string|null}){
- const [visible,setVisible]=useState(true),[remaining,setRemaining]=useState(15);
- useEffect(()=>{const id=window.setInterval(()=>setRemaining(v=>Math.max(0,v-1)),1000);return()=>window.clearInterval(id)},[]);
- if(!visible)return null;
- return <div className="visitor-overlay" role="dialog" aria-modal="true" aria-label="Link instructions"><div className="visitor-modal"><button type="button" aria-label={remaining?`Close available in ${remaining} seconds`:'Close popup'} disabled={remaining>0} className="modal-close" onClick={()=>setVisible(false)}>×</button><div className="modal-instructions"><strong>YOUR LINK IS ALMOST READY</strong><p>Explore sponsored content while you wait. Ad interaction is optional.</p></div><div className="modal-body"><div className="sponsor-flag">SPONSORED CONTENT</div>{directUrl?<><a className="sponsor-button orange" href={directUrl} target="_blank" rel="noopener noreferrer sponsored">VIEW SPONSORED AD ↗</a><p>Interested? You can explore the advertisement in a new tab.</p><a className="sponsor-button blue" href={directUrl} target="_blank" rel="noopener noreferrer sponsored">EXPLORE ADVERTISEMENT ↗</a></>:<p>No sponsored links are configured. Continue reading below.</p>}<p className="close-countdown">{remaining>0?`Close available in ${remaining} seconds`:'You may now close this popup and continue reading.'}</p></div></div></div>;
+
+import { useEffect, useState } from "react";
+
+/** This dialog is mounted ONLY by the public /go/[slug]/[step] page. */
+export type PopupLabels = {
+  title: string; intro: string; heading: string; description: string;
+  orange: string; blue: string; middleNote: string;
+};
+export default function VisitorPopup({ directUrl, labels }: { directUrl: string | null; labels: PopupLabels }) {
+  const [isOpen, setIsOpen] = useState(true);
+  const [secondsLeft, setSecondsLeft] = useState(15);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setSecondsLeft((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="visitor-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-heading">
+      <div className="visitor-modal">
+        <button
+          type="button"
+          className="modal-close"
+          disabled={secondsLeft > 0}
+          onClick={() => setIsOpen(false)}
+          aria-label={secondsLeft > 0 ? `Close available in ${secondsLeft} seconds` : "Close popup"}
+          title={secondsLeft > 0 ? `Available in ${secondsLeft}s` : "Close"}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+
+        <div className="modal-instructions" id="popup-heading">
+          <strong>{labels.title}</strong>
+          <p>{labels.intro}</p>
+        </div>
+
+        <div className="modal-body">
+          <p className="popup-heading">{labels.heading}</p>
+          <p className="popup-subheading">{labels.description}</p>
+          {directUrl ? (
+            <>
+              <a
+                href={directUrl}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="sponsor-button orange"
+                aria-label="Open sponsored advertisement in a new tab"
+              >
+                {labels.orange} <span aria-hidden="true">↗</span>
+              </a>
+              <p className="popup-middle-note">{labels.middleNote}</p>
+              <a
+                href={directUrl}
+                target="_blank"
+                rel="noopener noreferrer sponsored"
+                className="sponsor-button blue"
+                aria-label="Explore sponsored advertisement in a new tab"
+              >
+                {labels.blue} <span aria-hidden="true">↗</span>
+              </a>
+            </>
+          ) : (
+            <div className="popup-no-ad">No sponsored links are configured yet.</div>
+          )}
+          <p className="close-countdown" aria-live="polite">
+            {secondsLeft > 0
+              ? `Close button available in ${secondsLeft} seconds`
+              : "You can now close this popup to continue reading."}
+          </p>
+          <p className="popup-optional">You do not have to click an advertisement to access your link.</p>
+        </div>
+      </div>
+    </div>
+  );
 }

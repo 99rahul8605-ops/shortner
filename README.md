@@ -57,3 +57,20 @@ The archive has been checked for project structure and import routes. Dependency
 ### Public registration is NOT enabled just by deploying code
 
 Make sure the sender domain is verified with your mail provider, set the two new mail environment variables, run database migration, and complete a signup → inbox → verify → login → create link → API key → API call test on Vercel Preview first. Only then move to production. End-user billing, revenue sharing and automatic payouts are **not** included in V3.
+
+## Owner-created test accounts (V3 testing patch)
+
+Email sending can be configured later. To test now, sign in at `/admin/login` with your existing owner credentials, then go to `/admin/users`. Enter a test user's real email and click **Create account and generate password**. A cryptographically random temporary password is displayed only once. Give it to the tester through a secure channel; the account can log in at `/login` and use `/dashboard` and the developer API. The password is stored only as a bcrypt hash.
+
+**Important:** The account is explicitly marked `admin_created`, **not** email-verified. Only these owner-created accounts bypass the email-verification gate for testing. Normal public signups still require `RESEND_API_KEY` and `EMAIL_FROM`, which must be set before opening self-service registration. Without email sending, password-reset emails won't work; the owner should make sure test passwords can be recovered through a secure process. Do not provision accounts for arbitrary addresses without permission.
+
+Migration: run `node --env-file=.env.local scripts/init-db.mjs` after updating. It adds `users.admin_created` without changing existing users. Then deploy the updated project to Vercel. The new `POST /api/admin/users` route requires a current owner session and a same-origin browser request; returns a one-time temporary password, and returns HTTP 409 if the email already exists. Do not expose returned credentials in screenshots or logs.
+
+## Screenshot-style popup update
+
+This package updates the public visitor popup on all `/go/{slug}/{step}` pages. It uses a dimmed full-screen background, circular X that unlocks after 15 seconds, white instruction card, tall rounded white panel, and large orange/blue sponsored link buttons. Both sponsored buttons open the **same randomly selected active Direct Link for that visit** in a new tab. The page's **actual** Continue button is separate, after its normal 30/30/30/10-second countdown. Advertisement engagement is optional. The popup is not mounted on `/admin`, `/dashboard`, the homepage, registration, or link creation.
+
+To update: replace the files in your private GitHub repo with the ZIP contents (not the top-level folder), commit, and verify the Vercel Preview deployment before promoting to production. If your current public ZIP is already V3 with admin-created accounts, this is a code-only UI patch: no additional database migration is required.
+
+## Editable popup labels (V3 update)
+Admin → **Visitor popup text** lets the owner change the popup title, intro, heading, descriptive text, two sponsored-button labels and the message between them. These values live in PostgreSQL. Run `node --env-file=.env.local scripts/init-db.mjs` once after deploying; it inserts any missing default settings without resetting existing links, users, or ad settings. The 15-second close countdown, ad disclosure and separate actual Continue control remain unchanged. Never label an ad as a Continue or Download control.

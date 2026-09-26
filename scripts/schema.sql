@@ -60,3 +60,18 @@ CREATE TABLE IF NOT EXISTS abuse_reports (
 );
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
+
+-- Allows owner-provisioned test users to sign in before email delivery is configured.
+-- This is NOT email verification. Existing users stay unaffected.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_created BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Editable visitor popup text. Safe to run on existing BingoLink V3 installations.
+INSERT INTO settings(key,value) VALUES
+ ('popup_title','YOUR LINK IS ALMOST READY'),
+ ('popup_intro','Explore sponsored content while you wait.'),
+ ('popup_heading','SPONSORED CONTENT'),
+ ('popup_description','You may explore the advertisement below and return to this page.'),
+ ('popup_orange_label','VIEW SPONSORED AD'),
+ ('popup_blue_label','EXPLORE AD'),
+ ('popup_middle_note','ADVERTISEMENT · OPENS IN A NEW TAB')
+ON CONFLICT (key) DO NOTHING;

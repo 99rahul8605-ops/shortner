@@ -95,3 +95,7 @@ The owner UI is at `/admin` and `/admin/users`. Owner endpoints require an HttpO
 | POST | `/api/continue` | Advance after signed-cookie timer, JSON body `{"slug":"abc123","step":1}`; response `{ "next": "/go/abc123/2" }` or final destination |
 
 Visitor timers and progress are validated server-side. Ad clicks are optional and not part of the API.
+
+
+### Owner-only test account provisioning (not a developer API)
+`POST /api/admin/users` is available exclusively to a signed-in owner from the site's admin UI. Body: `{"email":"tester@example.com"}`. Returns HTTP 201 with a one-time `temporaryPassword` and the user record (`admin_created: true`, `email_verified_at: null`). Duplicate email returns 409; invalid email returns 400; unauthorized/cross-origin access returns 403. Credentials should never be logged or sent through untrusted channels. Public account registration and recovery continue to require a configured email provider.
