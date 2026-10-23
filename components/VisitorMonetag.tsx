@@ -126,6 +126,21 @@ export default function VisitorMonetag({
         onError={markScriptFailed}
       />
 
+      <Script id="hilltop-video-slider-7544277" strategy="afterInteractive">
+        {`
+(function(iabsu){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = iabsu || {};
+s.src = "//unfoldedtrade.com/bcX.Vjs/dbGjlI0WYTW/cj/Aetmd9IuFZbUAlLk/PzTWcF1rNhDzQHy/N/zUc-tmNsziUr0MNRDtIH4WMnQy";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+        `}
+      </Script>
+
       {(blocked || checking) && (
         <div
           role="alertdialog"
