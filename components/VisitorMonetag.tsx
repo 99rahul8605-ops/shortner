@@ -1,6 +1,5 @@
 "use client";
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4307435753931604"
-     crossorigin="anonymous"></script>
+
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 
