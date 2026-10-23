@@ -3,49 +3,108 @@
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+const CHECK_INTERVAL_MS = 2000;
+const BAIT_SETTLE_MS = 180;
+
+function baitLooksBlocked(el: HTMLDivElement) {
+  const style = window.getComputedStyle(el);
+  const rect = el.getBoundingClientRect();
+
+  return (
+    style.display === "none" ||
+    style.visibility === "hidden" ||
+    style.opacity === "0" ||
+    rect.width === 0 ||
+    rect.height === 0 ||
+    el.offsetParent === null
+  );
+}
+
 export default function VisitorMonetag({
   enabled,
 }: {
   enabled: boolean;
 }) {
-  const [adsBlocked, setAdsBlocked] = useState(false);
-  const scriptFailures = useRef(0);
+  const [blocked, setBlocked] = useState(false);
+  const [checking, setChecking] = useState(enabled);
+  const scriptFailedRef = useRef(false);
+  const runningRef = useRef(false);
 
-  const runAdBlockCheck = useCallback(() => {
-    if (!enabled) return;
+  const runCheck = useCallback(async () => {
+    if (!enabled || runningRef.current) return;
+    runningRef.current = true;
 
     const bait = document.createElement("div");
-    bait.className = "adsbox ad-banner ad-unit text-ad pub_300x250";
+    bait.className =
+      "adsbox ad ads ad-banner advertisement ad-placement pub_300x250 text-ad";
     bait.setAttribute("aria-hidden", "true");
     bait.style.cssText =
-      "position:absolute!important;left:-10000px!important;top:-10000px!important;width:1px!important;height:1px!important;pointer-events:none!important;";
+      "position:absolute!important;left:-10000px!important;top:-10000px!important;width:10px!important;height:10px!important;pointer-events:none!important;";
+
     document.body.appendChild(bait);
 
-    window.setTimeout(() => {
-      const style = window.getComputedStyle(bait);
-      const blocked =
-        !document.body.contains(bait) ||
-        style.display === "none" ||
-        style.visibility === "hidden" ||
-        bait.offsetHeight === 0 ||
-        bait.clientHeight === 0;
+    await new Promise((resolve) => window.setTimeout(resolve, BAIT_SETTLE_MS));
 
-      bait.remove();
-      if (blocked) setAdsBlocked(true);
-    }, 650);
+    const baitBlocked = baitLooksBlocked(bait);
+    bait.remove();
+
+    setBlocked(scriptFailedRef.current || baitBlocked);
+    setChecking(false);
+    runningRef.current = false;
   }, [enabled]);
 
   useEffect(() => {
-    runAdBlockCheck();
-  }, [runAdBlockCheck]);
+    if (!enabled) {
+      setBlocked(false);
+      setChecking(false);
+      return;
+    }
+
+    // Every article step mounts this component and immediately checks again.
+    setChecking(true);
+    void runCheck();
+
+    // Keep checking while the article is open. If the visitor enables an
+    // ad blocker after Step 1, the current/next step can still catch it.
+    const interval = window.setInterval(() => {
+      void runCheck();
+    }, CHECK_INTERVAL_MS);
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void runCheck();
+    };
+    window.addEventListener("focus", runCheck);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", runCheck);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [enabled, runCheck]);
+
+  useEffect(() => {
+    if (!blocked) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [blocked]);
 
   if (!enabled) return null;
 
-  const markScriptFailure = () => {
-    scriptFailures.current += 1;
-    // One ad provider request may occasionally fail. Two failures together are
-    // a much stronger signal that an ad/privacy blocker is stopping requests.
-    if (scriptFailures.current >= 2) setAdsBlocked(true);
+  const markScriptFailed = () => {
+    scriptFailedRef.current = true;
+    setBlocked(true);
+    setChecking(false);
+  };
+
+  const retry = () => {
+    scriptFailedRef.current = false;
+    setBlocked(false);
+    setChecking(true);
+    void runCheck();
   };
 
   return (
@@ -56,7 +115,7 @@ export default function VisitorMonetag({
         data-zone="286925"
         data-cfasync="false"
         strategy="afterInteractive"
-        onError={markScriptFailure}
+        onError={markScriptFailed}
       />
 
       <Script
@@ -64,10 +123,10 @@ export default function VisitorMonetag({
         src="https://nap5k.com/tag.min.js"
         data-zone="11898794"
         strategy="afterInteractive"
-        onError={markScriptFailure}
+        onError={markScriptFailed}
       />
 
-      {adsBlocked && (
+      {(blocked || checking) && (
         <div
           role="alertdialog"
           aria-modal="true"
@@ -79,52 +138,54 @@ export default function VisitorMonetag({
             display: "grid",
             placeItems: "center",
             padding: 20,
-            background: "#f4f7fb",
-            color: "#18243a",
-            fontFamily: "Arial, Helvetica, sans-serif",
+            background: "rgba(8, 15, 30, 0.96)",
           }}
         >
           <div
             style={{
-              width: "min(520px, 100%)",
-              background: "#fff",
-              border: "1px solid #dce5f0",
+              width: "min(460px, 100%)",
               borderRadius: 18,
-              padding: "32px 24px",
+              background: "#ffffff",
+              color: "#111827",
+              padding: 24,
               textAlign: "center",
-              boxShadow: "0 18px 55px rgba(25, 45, 75, .12)",
+              boxShadow: "0 24px 70px rgba(0,0,0,.35)",
             }}
           >
-            <div style={{ fontSize: 46, lineHeight: 1, marginBottom: 14 }}>🛡️</div>
-            <h1
-              id="adblock-title"
-              style={{ margin: "0 0 12px", fontSize: 27, color: "#162b49" }}
-            >
-              Ad blocker detected
-            </h1>
-            <p style={{ margin: "0 auto 10px", maxWidth: 430, lineHeight: 1.65, color: "#526174" }}>
-              Ads are required on this article page. Please disable your ad blocker, browser shield,
-              or DNS ad filtering for BingoLink, then reload this page.
-            </p>
-            <p style={{ margin: "0 auto 22px", maxWidth: 430, lineHeight: 1.55, fontSize: 14, color: "#718096" }}>
-              If you already disabled it, allow this site in your blocker and tap Retry.
-            </p>
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              style={{
-                border: 0,
-                borderRadius: 11,
-                background: "#4775e9",
-                color: "#fff",
-                fontWeight: 800,
-                fontSize: 16,
-                padding: "13px 28px",
-                cursor: "pointer",
-              }}
-            >
-              Retry
-            </button>
+            {checking && !blocked ? (
+              <>
+                <h2 id="adblock-title" style={{ margin: "0 0 10px" }}>
+                  Checking browser…
+                </h2>
+                <p style={{ margin: 0, color: "#4b5563", lineHeight: 1.6 }}>
+                  Please wait while we verify that the article can load correctly.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 id="adblock-title" style={{ margin: "0 0 10px" }}>
+                  Ad blocker detected
+                </h2>
+                <p style={{ margin: "0 0 18px", color: "#4b5563", lineHeight: 1.6 }}>
+                  Please disable your ad blocker or browser shield for BingoLink, then tap Retry to continue.
+                </p>
+                <button
+                  type="button"
+                  onClick={retry}
+                  style={{
+                    border: 0,
+                    borderRadius: 10,
+                    padding: "11px 20px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    background: "#2563eb",
+                    color: "#ffffff",
+                  }}
+                >
+                  Retry
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
